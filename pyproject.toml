@@ -1,0 +1,19 @@
+[project]
+name = "webidentification"
+version = "2026.02.22"
+description = "YOLO-based web element classification"
+dependencies = [
+    "ultralytics",
+    "pillow",
+]
+requires-python = ">=3.12"
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "black",
+    "mypy",
+]
+
+[tool.black]
+line-length = 88
