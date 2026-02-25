@@ -1,10 +1,18 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "webidentification"
-version = "2026.02.22"
+version = "2026.02.23"
 description = "YOLO-based web element classification"
 dependencies = [
     "ultralytics",
     "pillow",
+    "dask",
+    "neo4j",
+    "pandas",
+    "huggingface_hub"
 ]
 requires-python = ">=3.12"
 
@@ -12,8 +20,10 @@ requires-python = ">=3.12"
 dev = [
     "pytest",
     "black",
+    "isort",
     "mypy",
 ]
+all = ["webidentification[dev]"]
 
 [tool.black]
 line-length = 88
