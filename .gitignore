@@ -4,7 +4,7 @@ pytest.xml
 dataset/
 mobile_dataset/
 screenshots/
-
+*.pt
 
 # Created by https://www.toptal.com/developers/gitignore/api/python
 # Edit at https://www.toptal.com/developers/gitignore?templates=python
