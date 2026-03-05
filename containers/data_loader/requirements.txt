@@ -1,0 +1,9 @@
+# This is a shallow "copy" of pyproject.toml only made for ingestion of data. 
+# This is to skip torch download, as it is very  large. It increases the build  
+# time from around 100 seconds to around 2000 seconds. 
+
+neo4j 
+pillow 
+huggingface_hub
+datasets
+tqdm

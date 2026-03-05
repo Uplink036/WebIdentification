@@ -1,17 +1,32 @@
-from datasets import load_dataset
-from neo4j import GraphDatabase
-import json
 import base64
-from tqdm import tqdm
+import json
+import os
+import time
 from io import BytesIO
+import signal
+import sys
 import time
 
-URI = "bolt://database:7687"
-AUTH = ("neo4j", "password")
+from neo4j import GraphDatabase
+from tqdm import tqdm
+
+from datasets import load_dataset
+
+URI = os.getenv("URI", "bolt://localhost:7687")
+AUTH = (os.getenv("USERNAME", "neo4j"), os.getenv("PASSWORD", "password"))
 
 SPLITS = ["train", "test_domain", "test_task", "test_website"]
-BATCH_SIZE = 5
 
+shutdown_requested = False
+
+def handle_shutdown(signum, frame):
+    """Handle SIGTERM signal from Kubernetes or SIGINT from Ctrl+C"""
+    global shutdown_requested
+    print(f"Received signal {signum}, initiating graceful shutdown...")
+    shutdown_requested = True 
+
+signal.signal(signal.SIGTERM, handle_shutdown)
+signal.signal(signal.SIGINT, handle_shutdown)  
 
 def create_indexes(session):
     """Create indexes for faster MERGE operations"""
@@ -20,39 +35,37 @@ def create_indexes(session):
     session.run("CREATE INDEX IF NOT EXISTS FOR (e:Element) ON (e.key)")
 
 
-def flush_batch(session, batch):
-    if not batch:
-        return
-
+def send_row_to_database(session, information):
     t0 = time.time()
-    
-    # Single query with all operations to avoid transaction conflicts
-    session.run("""
-    UNWIND $rows AS row
-    MERGE (t:Task {id: row.annotation_id})
-    SET t.description = row.task, t.website = row.website, t.domain = row.domain, t.subdomain = row.subdomain
-    MERGE (a:Action {id: row.action_uid})
-    SET a.op = row.op, a.value = row.value, a.raw_html = row.raw_html, a.cleaned_html = row.cleaned_html, a.screenshot_b64 = row.screenshot_b64, a.type = row.split_type
+
+    session.run(
+        """
+    MERGE (t:Task {id: $annotation_id})
+    SET t.description = $task, t.website = $website, t.domain = $domain, t.subdomain = $subdomain
+    MERGE (a:Action {id: $action_uid})
+    SET a.op = $op, a.value = $value, a.raw_html = $raw_html, a.cleaned_html = $cleaned_html, a.screenshot_b64 = $screenshot_b64, a.type = $split_type
     MERGE (t)-[:HAS_ACTION]->(a)
-    WITH a, row
-    UNWIND row.pos_cands AS elem
+    WITH a
+    UNWIND $pos_cands AS elem
     MERGE (e:Element {key: elem.key})
     SET e.backend_node_id = elem.backend_node_id, e.tag = elem.tag, e.is_target = elem.is_target, e.attributes = elem.attributes
     MERGE (a)-[:TARGETS]->(e)
-    WITH a, row
-    UNWIND row.neg_cands AS elem
+    WITH a
+    UNWIND $neg_cands AS elem
     MERGE (e:Element {key: elem.key})
     SET e.backend_node_id = elem.backend_node_id, e.tag = elem.tag, e.is_target = elem.is_target, e.attributes = elem.attributes
     MERGE (a)-[:HAS_CANDIDATE]->(e)
-    """, rows=batch)
-    
+    """,
+        **information,
+    )
+
     return time.time() - t0
 
 
 def encode_screenshot(img):
     """Optimization 2: Cleaner screenshot encoding"""
     buf = BytesIO()
-    img.save(buf, format='PNG')
+    img.save(buf, format="PNG")
     return base64.b64encode(buf.getvalue()).decode("utf-8")
 
 
@@ -61,29 +74,31 @@ def extract_positive_elements(row, pos_cands):
     for elem in pos_cands:
         elem = json.loads(elem)
         key = f"{row['action_uid']}::{elem['backend_node_id']}"
-        processed_pos.append({
-                        **elem,
-                        "key": key
-                    })
-        
+        processed_pos.append({**elem, "key": key})
+
     return processed_pos
+
 
 def extract_negative_elements(row, neg_cands):
     processed_neg = []
     for elem in neg_cands:
         elem = json.loads(elem)
         key = f"{row['action_uid']}::{elem['backend_node_id']}"
-        processed_neg.append({
-                        **elem,
-                        "key": key
-                    })
-        
+        processed_neg.append({**elem, "key": key})
+
     return processed_neg
+
+
+def exists_in_db(session, action_uid):
+    result = session.run(
+        "MATCH (a:Action {id: $action_uid}) RETURN count(a) > 0 AS exists",
+        action_uid=action_uid,
+    )
+    return result.single()["exists"]
+
 
 with GraphDatabase.driver(URI, auth=AUTH) as driver:
     with driver.session() as session:
-
-        # Optimization 1: Create indexes before ingestion
         print("Creating indexes...")
         create_indexes(session)
 
@@ -93,22 +108,30 @@ with GraphDatabase.driver(URI, auth=AUTH) as driver:
         total_rows = 0
 
         for split in SPLITS:
+            if shutdown_requested:
+                print("Shutdown requested, stopping ingestion...")
+                break
+
             print(f"\nProcessing split: {split}")
 
             dataset = load_dataset(
-                "osunlp/Multimodal-Mind2Web",
-                split=split,
-                streaming=True
+                "osunlp/Multimodal-Mind2Web", split=split, streaming=True
             )
 
-            batch = []
             split_pos = 0
             split_neg = 0
             split_rows = 0
 
             for row in tqdm(dataset):
+                if shutdown_requested:
+                    print("Shutdown requested, stopping ingestion...")
+                    break
+
+                if exists_in_db(session, row["action_uid"]):
+                    continue
 
                 if row["screenshot"] is None:
+                    print(f"Skipping annotation {row['annotation_id']} due to missing screenshot")
                     continue
 
                 op = json.loads(row["operation"])
@@ -122,31 +145,24 @@ with GraphDatabase.driver(URI, auth=AUTH) as driver:
                 split_neg += len(processed_neg)
                 split_rows += 1
 
-                batch.append({
-                    "annotation_id": row["annotation_id"],
-                    "task": row["confirmed_task"],
-                    "website": row["website"],
-                    "domain": row["domain"],
-                    "subdomain": row["subdomain"],
-                    "action_uid": row["action_uid"],
-                    "op": op["op"],
-                    "value": op.get("value", ""),
-                    "raw_html": row["raw_html"],
-                    "cleaned_html": row["cleaned_html"],
-                    "screenshot_b64": encode_screenshot(row["screenshot"]),
-                    "split_type": split,
-                    "pos_cands": processed_pos,
-                    "neg_cands": processed_neg,
-                })
+                information = {
+                        "annotation_id": row["annotation_id"],
+                        "task": row["confirmed_task"],
+                        "website": row["website"],
+                        "domain": row["domain"],
+                        "subdomain": row["subdomain"],
+                        "action_uid": row["action_uid"],
+                        "op": op["op"],
+                        "value": op.get("value", ""),
+                        "raw_html": row["raw_html"],
+                        "cleaned_html": row["cleaned_html"],
+                        "screenshot_b64": encode_screenshot(row["screenshot"]),
+                        "split_type": split,
+                        "pos_cands": processed_pos,
+                        "neg_cands": processed_neg,
+                }
 
-                if len(batch) >= BATCH_SIZE:
-                    db_time = flush_batch(session, batch)
-                    total_db_time += db_time
-                    batch = []
-
-            # Flush remaining
-            db_time = flush_batch(session, batch)
-            if db_time:
+                db_time = send_row_to_database(session, information)
                 total_db_time += db_time
 
             total_pos += split_pos
@@ -154,14 +170,18 @@ with GraphDatabase.driver(URI, auth=AUTH) as driver:
             total_rows += split_rows
 
             print(f"  Rows: {split_rows}")
-            print(f"  Positive candidates: {split_pos} (avg: {split_pos/split_rows:.1f} per row)")
-            print(f"  Negative candidates: {split_neg} (avg: {split_neg/split_rows:.1f} per row)")
+            print(
+                f"  Positive candidates: {split_pos} (avg: {split_pos/split_rows:.1f} per row)"
+            )
+            print(
+                f"  Negative candidates: {split_neg} (avg: {split_neg/split_rows:.1f} per row)"
+            )
 
         print(f"\n=== TOTALS ===")
         print(f"Total rows: {total_rows}")
         print(f"Total positive candidates: {total_pos}")
         print(f"Total negative candidates: {total_neg}")
         print(f"Total DB time: {total_db_time:.2f}s")
-        print(f"Avg DB time per batch: {total_db_time/(total_rows/BATCH_SIZE):.3f}s")
+        print(f"Avg DB time per row: {total_db_time/(total_rows):.3f}s")
 
 print("Done.")

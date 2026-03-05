@@ -9,12 +9,12 @@ description = "YOLO-based web element classification"
 dependencies = [
     "ultralytics-opencv-headless",
     "pillow",
-    "dask",
     "neo4j",
     "pandas",
     "huggingface_hub",
     "wandb",
-    "datasets"
+    "datasets",
+    "tqdm",
 ]
 requires-python = ">=3.12"
 
@@ -25,6 +25,7 @@ dev = [
     "isort",
     "mypy",
 ]
+
 all = ["webidentification[dev]"]
 
 [tool.black]
