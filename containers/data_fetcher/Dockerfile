@@ -9,4 +9,4 @@ COPY ./containers/data_fetcher/requirements.txt .
 RUN pip install -r requirements.txt
 
 COPY ./tools/get_data_as_coco.py .
-CMD ["python", "get_data_as_coco.py", "--zip", "--clean"]
+CMD ["sh", "-c", "cd /app/CV_WebIdentification && python /app/get_data_as_coco.py --zip"]
