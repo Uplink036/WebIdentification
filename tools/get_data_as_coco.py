@@ -127,8 +127,9 @@ if __name__ == "__main__":
 
     try:
         with driver.session() as session:
-            data["names"] = {i: name for i, name in enumerate(set(ELEMENT_FILTER.values()))}
-            class_names = list(data["names"].values())
+            unique_class_names = sorted(set(ELEMENT_FILTER.values()))
+            data["names"] = {i: name for i, name in enumerate(unique_class_names)}
+            class_names = unique_class_names
 
         with driver.session() as session:
             result_ids = session.run("MATCH (a:Action) RETURN a.id AS action_uid")
