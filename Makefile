@@ -5,11 +5,11 @@ install: ## Install the package and its dependencies
 .PHONY: database
 database: ## Start the Neo4j database container
 	docker run \
-    --restart unless-stopped \
-    --publish=7474:7474 --publish=7687:7687 \
-    --env NEO4J_AUTH=neo4j/password \
-    --volume=./data:/data \
-    neo4j:2026.01.4
+	--restart unless-stopped \
+	--publish=7474:7474 --publish=7687:7687 \
+	--env NEO4J_AUTH=neo4j/password \
+	--volume=./data:/data \
+	neo4j:2026.01.4
 
 .PHONY: data_loader
 data_loader: ## Build the data loader Docker image
@@ -18,6 +18,13 @@ data_loader: ## Build the data loader Docker image
 .PHONY: load_data
 load_data: data_loader ## Load data into the database
 	./tools/docker_ingest.sh
+.PHONY: data_fetcher
+data_fetcher: ## Build the data fetcher Docker image
+	docker build -f ./containers/data_fetcher/Dockerfile -t webidentification_data_fetcher:latest .
+
+.PHONY: fetch_data
+fetch_data: data_fetcher ## Fetch data into ultralytics format as a ZIP file 
+	./tools/docker_fetch.sh
 
 .PHONY: help 
 help: ## Show this help

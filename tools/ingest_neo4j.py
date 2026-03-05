@@ -4,7 +4,6 @@ import os
 import time
 from io import BytesIO
 import signal
-import sys
 import time
 
 from neo4j import GraphDatabase
