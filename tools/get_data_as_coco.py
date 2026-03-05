@@ -64,7 +64,7 @@ def save_bbox(action_uid, elements, img_width, img_height, dir, class_names):
     bbox_bins = [[] for _ in range(0, ceil(new_height/MAX_HEIGHT))]
     for elem in elements:
         if elem["tag"] not in ELEMENT_FILTER:
-                continue
+            continue
         attrs = json.loads(elem["attributes"])
         bbox_str = attrs.get("bounding_box_rect")
         x_center, y_center, width, height = map(float, bbox_str.split(","))
