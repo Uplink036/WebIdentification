@@ -72,6 +72,8 @@ def save_bbox(action_uid, elements, img_width, img_height, dir, class_names):
         x_center, y_center, width, height = map(float, bbox_str.split(","))
         x_center = x_center * (new_width / img_width)
         y_center = y_center * (new_height / img_height)
+        width = width * (new_width / img_width)
+        height = height * (new_height / img_height)
         if x_center < 0 or x_center > new_width or y_center < 0 or y_center > new_height:
             continue
         
