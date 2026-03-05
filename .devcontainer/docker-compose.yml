@@ -10,6 +10,15 @@ services:
       - database
     networks:
       - webident-network
+    shm_size: "16gb"
+    runtime: nvidia
+    deploy:
+      resources:
+        limits:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
 
   database:
     image: neo4j:latest

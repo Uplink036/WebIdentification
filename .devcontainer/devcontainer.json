@@ -6,5 +6,9 @@
 	"service": "app",
 	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
 	"postCreateCommand": "pip install --upgrade pip; make install",
-	"forwardPorts": [7474, 7687]
+	"forwardPorts": [7474, 7687],
+	"runArgs": [
+		"--gpus",
+		"all"
+	],
 }
