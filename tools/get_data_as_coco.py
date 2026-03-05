@@ -67,6 +67,8 @@ def save_bbox(action_uid, elements, img_width, img_height, dir, class_names):
             continue
         attrs = json.loads(elem["attributes"])
         bbox_str = attrs.get("bounding_box_rect")
+        if not bbox_str:
+            continue
         x_center, y_center, width, height = map(float, bbox_str.split(","))
         x_center = x_center * (new_width / img_width)
         y_center = y_center * (new_height / img_height)
