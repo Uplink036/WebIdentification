@@ -8,7 +8,7 @@ database: ## Start the Neo4j database container
 	--restart unless-stopped \
 	--publish=7474:7474 --publish=7687:7687 \
 	--env NEO4J_AUTH=neo4j/password \
-	--volume=./data:/data \
+	--volume=webidentification_neo4j_data:/data \
 	neo4j:2026.01.4
 
 .PHONY: data_loader
