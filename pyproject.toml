@@ -16,7 +16,8 @@ dependencies = [
     "wandb",
     "datasets",
     "dotenv",
-    "tqdm"
+    "tqdm",
+    "torch",
 ]
 requires-python = ">=3.12"
 
