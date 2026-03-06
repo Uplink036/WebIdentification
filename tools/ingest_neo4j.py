@@ -1,13 +1,13 @@
 import base64
 import json
 import os
+import sys
 import time
 from io import BytesIO
 import signal
-import sys
-import time
 
 from neo4j import GraphDatabase
+from neo4j.exceptions import AuthError, ServiceUnavailable
 from tqdm import tqdm
 
 from datasets import load_dataset
@@ -97,7 +97,19 @@ def exists_in_db(session, action_uid):
     return result.single()["exists"]
 
 
+def verify_database_connection(driver):
+    try:
+        driver.verify_connectivity()
+        print(f"Connected to Neo4j at {URI} as {AUTH[0]=}.")
+    except (ServiceUnavailable, AuthError):
+        print("ERROR: Could not connect to Neo4j before starting ingestion.")
+        sys.exit(1)
+    except Exception:
+        print("ERROR: Unexpected error while connecting to Neo4j.")
+        sys.exit(1)
+
 with GraphDatabase.driver(URI, auth=AUTH) as driver:
+    verify_database_connection(driver)
     with driver.session() as session:
         print("Creating indexes...")
         create_indexes(session)

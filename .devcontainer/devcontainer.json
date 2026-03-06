@@ -1,14 +1,30 @@
-// For format details, see https://aka.ms/devcontainer.json. For config options, see the
-// README at: https://github.com/devcontainers/templates/tree/main/src/python
 {
-	"name": "WebIdentification",
-	"image": "mcr.microsoft.com/devcontainers/python:3.12",
-	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+	"name": "Docker outside of Docker",
+	"image": "mcr.microsoft.com/devcontainers/base:bullseye",
+
+	"features": {
+		"ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+			"version": "latest",
+			"enableNonRootDocker": "true",
+			"moby": "true"
+		},
+		"ghcr.io/devcontainers/features/nvidia-cuda:3": {},
+		"ghcr.io/devcontainers/features/python:1": {
+			"version": "3.12"
+		},
+		"ghcr.io/larsnieuwenhuizen/features/neovim:0": {},
+		"ghcr.io/devcontainers-extra/features/black:2": {},
+		"ghcr.io/devcontainers-extra/features/isort:2": {},
+		"ghcr.io/devcontainers-extra/features/mypy:2": {}
+	},
+	"remoteEnv": {
+		"LOCAL_WORKSPACE_FOLDER": "${localWorkspaceFolder}"
+	},
 	"postCreateCommand": "pip install --upgrade pip; make install",
 	"runArgs": [
 		"--gpus",
 		"all",
 		"--network",
 		"host"
-	],
+	]
 }
