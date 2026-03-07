@@ -77,16 +77,20 @@ def save_bbox(action_uid, elements, img_width, img_height, dir, class_names):
         if x_center < 0 or x_center > new_width or y_center < 0 or y_center > new_height:
             continue
         
-        x_norm = round(x_center / new_width, 5)
-        y_norm = round(y_center / new_height, 5)
-        width_norm = round(width / new_width, 5)  
-        height_norm = round(height / new_height, 5)
         class_name = ELEMENT_FILTER[elem["tag"]]
         class_id = class_names.index(class_name)
         bin_number = floor(y_center/MAX_HEIGHT)
 
+        if bin_number < 0 or bin_number >= len(bbox_bins):
+            continue
+
+        slice_x_center = round(x_center / MAX_WIDTH, 5)
+        slice_y_center = round((y_center - (bin_number * MAX_HEIGHT)) / MAX_HEIGHT, 5)
+        slice_width_norm = round(width / MAX_WIDTH, 5)
+        slice_height_norm = round(height / MAX_HEIGHT, 5)
+
         bbox_bins[bin_number].append(
-            (class_id, x_norm, y_norm, width_norm, height_norm)
+            (class_id, slice_x_center, slice_y_center, slice_width_norm, slice_height_norm)
         )
 
     for index, bbox_bin in enumerate(bbox_bins):
@@ -94,8 +98,8 @@ def save_bbox(action_uid, elements, img_width, img_height, dir, class_names):
             os.remove(dir / get_safe_filename(f"{action_uid}_{index}", "png"))
             continue
         with open(dir / get_safe_filename(f"{action_uid}_{index}", "txt"), "w") as f:
-            for class_id, x_norm, y_norm, width_norm, height_norm in bbox_bin:
-                f.write(f"{class_id} {x_norm} {y_norm} {width_norm} {height_norm}\n")
+            for class_id, slice_x_center, slice_y_center, slice_width_norm, slice_height_norm in bbox_bin:
+                f.write(f"{class_id} {slice_x_center} {slice_y_center} {slice_width_norm} {slice_height_norm}\n")
 
 def get_resized_width_and_height(image_width: int, image_height:int) -> tuple[int, int]:
     width_ratio = image_width / MAX_WIDTH
