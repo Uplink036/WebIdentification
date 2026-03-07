@@ -19,13 +19,9 @@ data_loader: ## Build the data loader Docker image
 load_data: data_loader ## Load data into the database
 	./tools/docker_ingest.sh
 
-.PHONY: data_fetcher
-data_fetcher: ## Build the data fetcher Docker image
-	docker build -f ./containers/data_fetcher/Dockerfile -t webidentification_data_fetcher:latest .
-
 .PHONY: fetch_data
-fetch_data: data_fetcher ## Fetch data into ultralytics format as a ZIP file 
-	./tools/docker_fetch.sh
+fetch_data: ## Fetch data into ultralytics format as a ZIP file 
+	python3 tools/get_data_as_coco.py
 
 .PHONY: data_pipeline
 data_pipeline: load_data fetch_data ## Run the full data pipeline
