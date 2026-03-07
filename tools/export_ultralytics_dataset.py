@@ -11,7 +11,7 @@ import shutil
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from math import ceil, floor
-
+import signal
 import yaml
 from neo4j import GraphDatabase
 from PIL import Image, ImageFile
@@ -34,6 +34,16 @@ ELEMENT_FILTER = {
     "button": "button",
     "a": "button",
 }
+
+RUNNING = True
+
+def signal_handler(sig, frame):
+    global RUNNING
+    RUNNING = False
+    print("Interrupt received, stopping...")
+
+signal.signal(signal.SIGINT, signal_handler)
+signal.signal(signal.SIGTERM, signal_handler)
 
 
 def get_safe_filename(action_uid, format="png"):
@@ -64,7 +74,6 @@ def unstitch_image(image: ImageFile) -> list[ImageFile]:
     max_height = MAX_HEIGHT
 
     image_width, image_height = image.size[0], image.size[1]
-    print(image_width, image_height)
     new_images = ceil(image_height / max_height)
     images = [
         image.crop((0, max_height * i, max_width, max_height * (i + 1)))
@@ -210,7 +219,10 @@ if __name__ == "__main__":
 
         with driver.session() as session:
             result_ids = session.run("MATCH (a:Action) RETURN a.id AS action_uid")
-            for record in tqdm(result_ids):
+            for record in tqdm(result_ids, desc="Processing actions", unit=" db-image"):
+                if not RUNNING:
+                    print("Stopping early due to interrupt.")
+                    break
                 action_uid = record["action_uid"]
                 result_action = session.run(
                     """
