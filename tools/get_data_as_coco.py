@@ -80,10 +80,10 @@ def save_bbox(action_uid, elements, img_width, img_height, dir, class_names):
         )
         if not is_within_image_bounds(new_width, new_height, x_center, y_center):
             continue
-        class_id = get_class_id_from_element(class_names, elem)
         bin_number = determine_y_bin_from_center(y_center)
         if is_bin_number_out_of_bounds(bbox_bins, bin_number):
             continue
+        class_id = get_class_id_from_element(class_names, elem)
 
         slice_x_center, slice_y_center, slice_width_norm, slice_height_norm = (
             normalize_bounding_box(x_center, y_center, width, height, bin_number)
