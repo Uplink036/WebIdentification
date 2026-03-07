@@ -9,6 +9,7 @@ import pathlib
 import random
 import shutil
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from math import ceil, floor
 
 import yaml
@@ -44,9 +45,17 @@ def save_screenshot(action_uid, screenshot_b64, dir):
     img_data = base64.b64decode(screenshot_b64)
     img = Image.open(io.BytesIO(img_data))
     resized_image = resize_with_aspect_ratio(img)
-    for index, image in enumerate(unstitch_image(resized_image)):
-        filename = get_safe_filename(f"{action_uid}_{index}", "png")
-        image.save(dir / filename)
+
+    image_slices = list(enumerate(unstitch_image(resized_image)))
+    max_workers = min(8, len(image_slices))
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = []
+        for index, image in image_slices:
+            filename = get_safe_filename(f"{action_uid}_{index}", "png")
+            futures.append(executor.submit(image.save, dir / filename))
+
+        for future in futures:
+            future.result()
     return img.size
 
 
