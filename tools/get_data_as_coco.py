@@ -17,7 +17,6 @@ from math import floor, ceil
 URI = os.getenv("URI", "bolt://localhost:7687")
 AUTH = (os.getenv("USERNAME", "neo4j"), os.getenv("PASSWORD", "password"))
 
-
 SPLITS = ["train", "test_domain", "test_task", "test_website"]
 
 ROOT_DIR = pathlib.Path("./CV_WebIdentification")
@@ -69,26 +68,16 @@ def save_bbox(action_uid, elements, img_width, img_height, dir, class_names):
         bbox_str = attrs.get("bounding_box_rect")
         if not bbox_str:
             continue
-        x_center, y_center, width, height = map(float, bbox_str.split(","))
-        x_center = x_center * (new_width / img_width)
-        y_center = y_center * (new_height / img_height)
-        width = width * (new_width / img_width)
-        height = height * (new_height / img_height)
-        if x_center < 0 or x_center > new_width or y_center < 0 or y_center > new_height:
-            continue
-        
-        class_name = ELEMENT_FILTER[elem["tag"]]
-        class_id = class_names.index(class_name)
-        bin_number = floor(y_center/MAX_HEIGHT)
 
-        if bin_number < 0 or bin_number >= len(bbox_bins):
+        x_center, y_center, width, height = resize_bounding_box(img_width, img_height, new_width, new_height, bbox_str)
+        if not is_within_image_bounds(new_width, new_height, x_center, y_center):
+            continue
+        class_id = get_class_id_from_element(class_names, elem)
+        bin_number = determine_y_bin_from_center(y_center)
+        if is_bin_number_out_of_bounds(bbox_bins, bin_number):
             continue
 
-        slice_x_center = round(x_center / MAX_WIDTH, 5)
-        slice_y_center = round((y_center - (bin_number * MAX_HEIGHT)) / MAX_HEIGHT, 5)
-        slice_width_norm = round(width / MAX_WIDTH, 5)
-        slice_height_norm = round(height / MAX_HEIGHT, 5)
-
+        slice_x_center, slice_y_center, slice_width_norm, slice_height_norm = normalize_bounding_box(x_center, y_center, width, height, bin_number)
         bbox_bins[bin_number].append(
             (class_id, slice_x_center, slice_y_center, slice_width_norm, slice_height_norm)
         )
@@ -100,6 +89,35 @@ def save_bbox(action_uid, elements, img_width, img_height, dir, class_names):
         with open(dir / get_safe_filename(f"{action_uid}_{index}", "txt"), "w") as f:
             for class_id, slice_x_center, slice_y_center, slice_width_norm, slice_height_norm in bbox_bin:
                 f.write(f"{class_id} {slice_x_center} {slice_y_center} {slice_width_norm} {slice_height_norm}\n")
+
+def is_bin_number_out_of_bounds(bbox_bins, bin_number):
+    return bin_number < 0 or bin_number >= len(bbox_bins)
+
+def determine_y_bin_from_center(y_center):
+    return floor(y_center/MAX_HEIGHT)
+
+def get_class_id_from_element(class_names, elem):
+    class_name = ELEMENT_FILTER[elem["tag"]]
+    class_id = class_names.index(class_name)
+    return class_id
+
+def is_within_image_bounds(new_width, new_height, x_center, y_center):
+    return x_center >= 0 and x_center <= new_width and y_center >= 0 and y_center <= new_height
+
+def resize_bounding_box(img_width, img_height, new_width, new_height, bbox_str):
+    x_center, y_center, width, height = map(float, bbox_str.split(","))
+    x_center = x_center * (new_width / img_width)
+    y_center = y_center * (new_height / img_height)
+    width = width * (new_width / img_width)
+    height = height * (new_height / img_height)
+    return x_center,y_center,width,height
+
+def normalize_bounding_box(x_center, y_center, width, height, bin_number):
+    slice_x_center = round(x_center / MAX_WIDTH, 5)
+    slice_y_center = round((y_center - (bin_number * MAX_HEIGHT)) / MAX_HEIGHT, 5)
+    slice_width_norm = round(width / MAX_WIDTH, 5)
+    slice_height_norm = round(height / MAX_HEIGHT, 5)
+    return slice_x_center,slice_y_center,slice_width_norm,slice_height_norm
 
 def get_resized_width_and_height(image_width: int, image_height:int) -> tuple[int, int]:
     width_ratio = image_width / MAX_WIDTH
