@@ -20,7 +20,7 @@ load_data: data_loader ## Load data into the database
 	./tools/docker_ingest.sh
 
 .PHONY: fetch_data
-fetch_data: data_fetcher ## Fetch data into ultralytics format as a ZIP file 
+fetch_data: ## Fetch data into ultralytics format as a ZIP file 
 	python3 tools/get_data_as_coco.py
 
 .PHONY: data_pipeline
