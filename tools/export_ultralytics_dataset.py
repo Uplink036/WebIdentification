@@ -6,12 +6,12 @@ import io
 import json
 import os
 import pathlib
-import random
 import shutil
-import sys
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from math import ceil, floor
 import signal
+import sys
+from concurrent.futures import ThreadPoolExecutor
+from math import ceil, floor
+
 import yaml
 from neo4j import GraphDatabase
 from PIL import Image, ImageFile
@@ -57,6 +57,9 @@ def save_screenshot(action_uid, screenshot_b64, dir):
     resized_image = resize_with_aspect_ratio(img)
 
     image_slices = list(enumerate(unstitch_image(resized_image)))
+    if not image_slices:
+        print(f"Error: No image slices generated for action {action_uid}")
+        return img.size
     max_workers = min(8, len(image_slices))
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = []

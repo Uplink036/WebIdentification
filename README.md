@@ -55,7 +55,7 @@ This builds the container in `containers/data_loader/` and runs `tools/ingest_ne
 ### 3. Export images + labels (YOLO format)
 
 ```bash
-python get_data_as_coco.py
+python export_ultralytics_dataset.py
 ```
 
 Optional flags:
@@ -66,7 +66,7 @@ Optional flags:
 Outputs:
 
 - `CV_WebIdentification/train|test|val/` with `.png` screenshots and `.txt` labels
-- `coco8.yaml` with class names and split paths
+- `cv_webidentification.yaml` with class names and split paths
 
 ### 4. Train model
 
