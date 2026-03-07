@@ -202,7 +202,7 @@ def process_action(record: dict, class_names: list[str]):
 
 
 def iter_action_records(session) -> dict:
-    result_ids = session.run("MATCH (a:Action) RETURN a.id AS action_uid LIMIT 200")
+    result_ids = session.run("MATCH (a:Action) RETURN a.id AS action_uid")
     for record in result_ids:
         action_uid = record["action_uid"]
         result_action = session.run(
