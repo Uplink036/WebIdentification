@@ -21,7 +21,7 @@ load_data: data_loader ## Load data into the database
 
 .PHONY: fetch_data
 fetch_data: ## Fetch data into ultralytics format as a ZIP file 
-	python3 tools/export_ultralytics_dataset.py
+	python3 tools/get_data_as_coco.py
 
 .PHONY: data_pipeline
 data_pipeline: load_data fetch_data ## Run the full data pipeline

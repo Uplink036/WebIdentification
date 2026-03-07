@@ -55,7 +55,7 @@ This builds the container in `containers/data_loader/` and runs `tools/ingest_ne
 ### 3. Export images + labels (YOLO format)
 
 ```bash
-python tools/export_ultralytics_dataset.py
+python get_data_as_coco.py
 ```
 
 Optional flags:
