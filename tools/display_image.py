@@ -1,4 +1,4 @@
-"""A tool to show the boundingboxes of a image (and predictions?)"""
+"""A tool to display the bounding boxes of an image and optionally overlay model predictions."""
 
 import argparse
 from dataclasses import dataclass
