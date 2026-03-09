@@ -129,7 +129,8 @@ def main():
             print(f"Model file not found: {model_path}")
         else:
             detected_boxes = get_predictions(image_path, model_path)
-            image = draw_on_image(image, detected_boxes, colour="red")
+            if detected_boxes is not None or len(detected_boxes) > 0:
+                image = draw_on_image(image, detected_boxes, colour="red")
 
     output_path = (
         Path(args.output)
