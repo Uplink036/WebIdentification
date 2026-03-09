@@ -56,7 +56,7 @@ def unstitch_image(image: Image.Image) -> list[Image.Image]:
     max_width = MAX_WIDTH
     max_height = MAX_HEIGHT
 
-    image_width, image_height = image.size[0], image.size[1]
+    image_height = image.size[1]
     new_images = ceil(image_height / max_height)
     images = [
         image.crop((0, max_height * i, max_width, max_height * (i + 1)))
