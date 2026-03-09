@@ -95,10 +95,9 @@ def main():
     )
     parser.add_argument("image_path", type=str, help="Path to the image file.")
     parser.add_argument(
-        "-p",
-        "--pred",
-        "--predictions",
-        dest="predictions",
+        "-m",
+        "--model",
+        dest="model",
         type=str,
         help="Path to a model file (optional).",
     )
@@ -127,8 +126,8 @@ def main():
         bounding_boxes = get_bounding_boxes(bbox_info_path)
         image = draw_on_image(image, bounding_boxes, colour="blue")
 
-    if args.predictions is not None:
-        model_path = Path(args.predictions)
+    if args.model is not None:
+        model_path = Path(args.model)
         if not model_path.exists():
             print(f"Model file not found: {model_path}")
         else:
