@@ -109,9 +109,6 @@ def main():
     args = parser.parse_args()
 
     image_path = Path(args.image_path)
-    if args.image_path is None:
-        print("Please provide a path to an image file.")
-        return
 
     if not image_path.exists():
         print(f"Image file does not exist: {image_path}")
