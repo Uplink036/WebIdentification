@@ -220,10 +220,12 @@ def resize_with_aspect_ratio(image: Image.Image) -> Image.Image:
 def get_current_dir(split: str) -> pathlib.Path:
     if split == "test_website":
         return VAL_DIR
-    elif split in ["test_domain"]:
+    elif split == "test_domain":
         return TEST_DIR
     elif split == "train":
         return TRAIN_DIR
+    elif split == "test_task":
+        return None
     else:
         raise ValueError(f"Unknown split: {split}")
 
@@ -267,6 +269,8 @@ def main():
                 record = result_action.single()
                 split = record["split"]
                 current_dir = get_current_dir(split)
+                if current_dir is None:
+                    continue
 
                 img_width, img_height = save_screenshot(
                     record["action_uid"], record["screenshot"], current_dir
