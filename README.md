@@ -50,8 +50,6 @@ By default this starts Neo4j at:
 make load_data
 ```
 
-This builds the container in `containers/data_loader/` and runs `tools/ingest_neo4j.py`.
-
 ### 3. Export images + labels (YOLO format)
 
 ```bash
@@ -67,6 +65,8 @@ Outputs:
 
 - `CV_WebIdentification/train|test|val/` with `.png` screenshots and `.txt` labels
 - `cv_webidentification.yaml` with class names and split paths
+
+Note, this took about 2 hours to run on my machine.
 
 ### 4. Train model
 

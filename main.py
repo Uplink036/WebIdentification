@@ -117,7 +117,7 @@ def main() -> None:
         model.train(
             data=str(SPLIT_ULTRALYTICS_NAME),
             epochs=100,
-            project="ultralytics",
+            project="WebIdentification",
             name=f"yolo26n_split_{previous_split}_{current_split}-0",
             batch=batch_size,
             imgsz=640,
