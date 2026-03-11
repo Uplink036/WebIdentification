@@ -3,13 +3,14 @@ import os
 from pathlib import Path
 
 import torch
-import wandb
 from dotenv import load_dotenv
 from ultralytics import RTDETR, YOLO, settings
 
+import wandb
+
 MODEL_WEIGHTS = {"yolo": "yolo26n.pt", "rtdetr": "rtdetr-l.pt"}
 CONFIG_PATH = Path("cv_webidentification.yaml")
-PERCENTAGE_TRAIN_SPLITS = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+PERCENTAGE_TRAIN_SPLITS = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 MAX_WORKERS = 4
 AUTO_BATCH_SIZE = True
 BATCH_UTILIZATION_TARGET = -1 if AUTO_BATCH_SIZE else 0.8
@@ -65,7 +66,7 @@ def main() -> None:
             data=str(CONFIG_PATH),
             epochs=100,
             project="WebIdentification",
-            name=f"{model_key}_{Path(model_weights).stem}_split_{split}-0",
+            name=f"{model_key}_split_{split}-0",
             batch=batch_size,
             imgsz=640,
             workers=train_workers,

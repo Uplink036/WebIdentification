@@ -10,6 +10,8 @@ coco8.yaml
 data/
 CV_WebIdentification*/
 runs/
+wandb/
+
 # Created by https://www.toptal.com/developers/gitignore/api/python
 # Edit at https://www.toptal.com/developers/gitignore?templates=python
 

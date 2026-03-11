@@ -1,16 +1,15 @@
 import base64
 import json
 import os
+import signal
 import sys
 import time
 from io import BytesIO
-import signal
 
+from datasets import load_dataset
 from neo4j import GraphDatabase
 from neo4j.exceptions import AuthError, ServiceUnavailable
 from tqdm import tqdm
-
-from datasets import load_dataset
 
 URI = os.getenv("URI", "bolt://localhost:7687")
 AUTH = (os.getenv("USERNAME", "neo4j"), os.getenv("PASSWORD", "password"))
@@ -19,14 +18,17 @@ SPLITS = ["train", "test_domain", "test_task", "test_website"]
 
 shutdown_requested = False
 
+
 def handle_shutdown(signum, frame):
     """Handle SIGTERM signal from Kubernetes or SIGINT from Ctrl+C"""
     global shutdown_requested
     print(f"Received signal {signum}, initiating graceful shutdown...")
-    shutdown_requested = True 
+    shutdown_requested = True
+
 
 signal.signal(signal.SIGTERM, handle_shutdown)
-signal.signal(signal.SIGINT, handle_shutdown)  
+signal.signal(signal.SIGINT, handle_shutdown)
+
 
 def create_indexes(session):
     """Create indexes for faster MERGE operations"""
@@ -108,6 +110,7 @@ def verify_database_connection(driver):
         print("ERROR: Unexpected error while connecting to Neo4j.")
         sys.exit(1)
 
+
 with GraphDatabase.driver(URI, auth=AUTH) as driver:
     verify_database_connection(driver)
     with driver.session() as session:
@@ -143,7 +146,9 @@ with GraphDatabase.driver(URI, auth=AUTH) as driver:
                     continue
 
                 if row["screenshot"] is None:
-                    print(f"Skipping annotation {row['annotation_id']} due to missing screenshot")
+                    print(
+                        f"Skipping annotation {row['annotation_id']} due to missing screenshot"
+                    )
                     continue
 
                 op = json.loads(row["operation"])
@@ -158,20 +163,20 @@ with GraphDatabase.driver(URI, auth=AUTH) as driver:
                 split_rows += 1
 
                 information = {
-                        "annotation_id": row["annotation_id"],
-                        "task": row["confirmed_task"],
-                        "website": row["website"],
-                        "domain": row["domain"],
-                        "subdomain": row["subdomain"],
-                        "action_uid": row["action_uid"],
-                        "op": op["op"],
-                        "value": op.get("value", ""),
-                        "raw_html": row["raw_html"],
-                        "cleaned_html": row["cleaned_html"],
-                        "screenshot_b64": encode_screenshot(row["screenshot"]),
-                        "split_type": split,
-                        "pos_cands": processed_pos,
-                        "neg_cands": processed_neg,
+                    "annotation_id": row["annotation_id"],
+                    "task": row["confirmed_task"],
+                    "website": row["website"],
+                    "domain": row["domain"],
+                    "subdomain": row["subdomain"],
+                    "action_uid": row["action_uid"],
+                    "op": op["op"],
+                    "value": op.get("value", ""),
+                    "raw_html": row["raw_html"],
+                    "cleaned_html": row["cleaned_html"],
+                    "screenshot_b64": encode_screenshot(row["screenshot"]),
+                    "split_type": split,
+                    "pos_cands": processed_pos,
+                    "neg_cands": processed_neg,
                 }
 
                 db_time = send_row_to_database(session, information)
