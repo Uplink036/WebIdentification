@@ -74,3 +74,25 @@ Note, this took about 2 hours to run on my machine.
 export WANDB_API_KEY=<your_key>
 python main.py
 ```
+
+Choose model family:
+
+```bash
+python main.py --model yolo
+python main.py --model rtdetr
+```
+
+### 5. Start a W&B sweep
+
+Create a sweep from `docs/sweep.yaml`:
+
+```bash
+export WANDB_API_KEY=<your_key>
+wandb sweep docs/sweep.yaml --project WebIdentification
+```
+
+Start an agent with the returned sweep ID:
+
+```bash
+python sweep.py --sweep-id <your_sweep_id>
+```
