@@ -114,6 +114,7 @@ def main() -> None:
     model = YOLO(MODEL)
     for previous_split, current_split, new_files in iter_split_batches(all_train_images, splits):
         copy_split_files(new_files, split_train_dir)
+        model = YOLO(MODEL)
         model.train(
             data=str(SPLIT_ULTRALYTICS_NAME),
             epochs=100,
@@ -123,6 +124,7 @@ def main() -> None:
             imgsz=640,
             workers=train_workers,
             device=train_device,
+            patience=10,
         )
 
 
