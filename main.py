@@ -16,8 +16,6 @@ SPLIT_TRAIN_DIR_NAME = "split_train"
 PERCENTAGE_TRAIN_SPLITS = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 BATCH_UTILIZATION_TARGET = -1 # Auto
 MAX_WORKERS = 4
-MAX_BATCH_SIZE = 16
-MEMORY_PER_ITEM_GB = 1.1
 
 def get_available_shm_gb() -> float:
     """Return available /dev/shm size in GB; 0 when unavailable."""
