@@ -1,20 +1,29 @@
 import os
-import shutil
-from copy import deepcopy
+import argparse
 from pathlib import Path
 
 import torch
 import wandb
-import yaml
 from dotenv import load_dotenv
-from ultralytics import YOLO, settings
+from ultralytics import RTDETR, YOLO, settings
 
-MODEL = "yolo26n.pt"
+MODEL_WEIGHTS = {"yolo": "yolo26n.pt", "rtdetr": "rtdetr-l.pt"}
 CONFIG_PATH = Path("cv_webidentification.yaml")
 PERCENTAGE_TRAIN_SPLITS = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 MAX_WORKERS = 4
 AUTO_BATCH_SIZE = True
 BATCH_UTILIZATION_TARGET = -1 if AUTO_BATCH_SIZE else 0.8
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Train WebIdentification model")
+    parser.add_argument(
+        "--model",
+        choices=("yolo", "rtdetr"),
+        default="yolo",
+        help="Choose yolo or rtdetr",
+    )
+    return parser.parse_args()
 
 def get_available_shm_gb() -> float:
     """Return available /dev/shm size in GB; 0 when unavailable."""
@@ -38,21 +47,24 @@ def pick_dataloader_workers() -> int:
 
 
 def main() -> None:
+    args = parse_args()
     load_dotenv()
     settings.update({"wandb": True})
     wandb.login(key=os.environ.get("WANDB_API_KEY"))
 
+    model_key = args.model
+    model_weights = MODEL_WEIGHTS[model_key]
     train_device = 0 if torch.cuda.is_available() else "cpu"
     train_workers = pick_dataloader_workers()
     batch_size = BATCH_UTILIZATION_TARGET
 
     for split in PERCENTAGE_TRAIN_SPLITS:
-        model = YOLO(MODEL)
+        model = RTDETR(model_weights) if model_key == "rtdetr" else YOLO(model_weights)
         model.train(
             data=str(CONFIG_PATH),
             epochs=100,
             project="WebIdentification",
-            name=f"{MODEL}_split_{split}-0",
+            name=f"{model_key}_{Path(model_weights).stem}_split_{split}-0",
             batch=batch_size,
             imgsz=640,
             workers=train_workers,
