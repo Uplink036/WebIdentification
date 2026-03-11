@@ -16,6 +16,7 @@ class BoundingBox:
     width: float
     height: float
 
+
 def get_image(image_path: Path) -> Image.Image | None:
     """Load an image from the specified path."""
     try:
