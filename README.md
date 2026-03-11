@@ -53,7 +53,7 @@ make load_data
 ### 3. Export images + labels (YOLO format)
 
 ```bash
-python export_ultralytics_dataset.py
+python -m webidentification.pipeline.export_ultralytics_dataset
 ```
 
 Optional flags:
@@ -72,14 +72,14 @@ Note, this took about 2 hours to run on my machine.
 
 ```bash
 export WANDB_API_KEY=<your_key>
-python main.py
+python src/webidentification/cli/train.py
 ```
 
 Choose model family:
 
 ```bash
-python main.py --model yolo
-python main.py --model rtdetr
+python src/webidentification/cli/train.py --model yolo
+python src/webidentification/cli/train.py --model rtdetr
 ```
 
 ### 5. Start a W&B sweep
@@ -94,5 +94,5 @@ wandb sweep docs/sweep.yaml --project WebIdentification
 Start an agent with the returned sweep ID:
 
 ```bash
-python sweep.py --sweep-id <your_sweep_id>
+python src/webidentification/cli/sweep.py --sweep-id <your_sweep_id>
 ```

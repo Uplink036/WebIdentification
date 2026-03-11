@@ -24,4 +24,4 @@ parameters:
     distribution: int_uniform
     max: 25
     min: 4
-program: sweep.py
+program: src/webidentification/cli/train.py

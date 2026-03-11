@@ -2,7 +2,7 @@ import argparse
 import os
 import wandb
 from dotenv import load_dotenv
-from sweep_train import run_sweep_train
+from webidentification.training.sweep_train import run_sweep_train
 
 
 def parse_args() -> argparse.Namespace:

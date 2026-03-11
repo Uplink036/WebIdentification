@@ -17,11 +17,11 @@ data_loader: ## Build the data loader Docker image
 
 .PHONY: load_data
 load_data: data_loader ## Load data into the database
-	./tools/docker_ingest.sh
+	./containers/data_loader/docker_ingest.sh
 
 .PHONY: fetch_data
 fetch_data: ## Fetch data into ultralytics format as a ZIP file 
-	python3 tools/export_ultralytics_dataset.py
+	python3 src/webidentification/pipeline/export_ultralytics_dataset.py
 
 .PHONY: data_pipeline
 data_pipeline: load_data fetch_data ## Run the full data pipeline

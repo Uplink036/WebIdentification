@@ -8,5 +8,5 @@ WORKDIR /app
 COPY ./containers/data_loader/requirements.txt .
 RUN pip install -r requirements.txt
 
-COPY ./tools/ingest_neo4j.py .
+COPY src/webidentification/pipeline/ingest_neo4j.py .
 CMD ["python", "ingest_neo4j.py"]
