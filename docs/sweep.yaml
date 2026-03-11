@@ -1,0 +1,27 @@
+method: bayes
+metric:
+  goal: maximize
+  name: metrics/recall(B)
+parameters:
+  epochs:
+    distribution: int_uniform
+    max: 100
+    min: 50
+  fraction:
+    distribution: uniform
+    max: 1
+    min: 0.05
+  imgsz:
+    distribution: int_uniform
+    max: 960
+    min: 320
+  model:
+    distribution: categorical
+    values:
+    - yolo26n.pt
+    - rtdetr-l.pt
+  patience:
+    distribution: int_uniform
+    max: 25
+    min: 4
+program: sweep.py
