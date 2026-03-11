@@ -53,7 +53,7 @@ make load_data
 ### 3. Export images + labels (YOLO format)
 
 ```bash
-python -m webidentification.pipeline.export_ultralytics_dataset
+python src/webidentification/pipeline/export_ultralytics_dataset.py
 ```
 
 Optional flags:
