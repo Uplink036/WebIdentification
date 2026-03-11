@@ -1,5 +1,5 @@
-import os
 import argparse
+import os
 from pathlib import Path
 
 import torch
@@ -25,11 +25,12 @@ def parse_args() -> argparse.Namespace:
     )
     return parser.parse_args()
 
+
 def get_available_shm_gb() -> float:
     """Return available /dev/shm size in GB; 0 when unavailable."""
     try:
         shm_stats = os.statvfs("/dev/shm")
-        return (shm_stats.f_bavail * shm_stats.f_frsize) / (1024 ** 3)
+        return (shm_stats.f_bavail * shm_stats.f_frsize) / (1024**3)
     except OSError:
         return 0.0
 
