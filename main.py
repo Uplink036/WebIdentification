@@ -14,8 +14,9 @@ CONFIG_PATH = Path("cv_webidentification.yaml")
 SPLIT_ULTRALYTICS_NAME = Path("ultralytics_split.yaml")
 SPLIT_TRAIN_DIR_NAME = "split_train"
 PERCENTAGE_TRAIN_SPLITS = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-BATCH_UTILIZATION_TARGET = -1 # Auto
 MAX_WORKERS = 4
+AUTO_BATCH_SIZE = True
+BATCH_UTILIZATION_TARGET = -1 if AUTO_BATCH_SIZE else 0.8
 
 def get_available_shm_gb() -> float:
     """Return available /dev/shm size in GB; 0 when unavailable."""
@@ -91,6 +92,7 @@ def main() -> None:
 
     train_device = 0 if torch.cuda.is_available() else "cpu"
     train_workers = pick_dataloader_workers()
+    batch_size = BATCH_UTILIZATION_TARGET
 
     for previous_split, current_split, new_files in iter_split_batches(all_train_images, splits):
         copy_split_files(new_files, split_train_dir)
@@ -100,7 +102,7 @@ def main() -> None:
             epochs=100,
             project="WebIdentification",
             name=f"yolo26n_split_{previous_split}_{current_split}-0",
-            batch=BATCH_UTILIZATION_TARGET,
+            batch=batch_size,
             imgsz=640,
             workers=train_workers,
             device=train_device,
