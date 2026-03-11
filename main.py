@@ -14,6 +14,7 @@ CONFIG_PATH = Path("cv_webidentification.yaml")
 SPLIT_ULTRALYTICS_NAME = Path("ultralytics_split.yaml")
 SPLIT_TRAIN_DIR_NAME = "split_train"
 PERCENTAGE_TRAIN_SPLITS = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+BATCH_UTILIZATION_TARGET = -1 # Auto
 MAX_WORKERS = 4
 MAX_BATCH_SIZE = 16
 MEMORY_PER_ITEM_GB = 1.1
@@ -37,23 +38,6 @@ def pick_dataloader_workers() -> int:
 
     cpu_count = os.cpu_count() or 1
     return max(1, min(MAX_WORKERS, cpu_count // 2))
-
-
-def get_available_memory_gb(device: int | str) -> float:
-    """Return available memory in GB for the selected training device."""
-    if device == "cpu":
-        page_size = os.sysconf("SC_PAGE_SIZE")
-        available_pages = os.sysconf("SC_AVPHYS_PAGES")
-        return (page_size * available_pages) / (1024 ** 3)
-    else:
-        free_mem_bytes, _ = torch.cuda.mem_get_info(device)
-        return free_mem_bytes / (1024 ** 3)
-
-
-def pick_batch_size(device: int | str) -> int:
-    """Choose batch size from available memory with safety bounds."""
-    available_mem_gb = get_available_memory_gb(device)
-    return max(1, min(MAX_BATCH_SIZE, int(available_mem_gb // MEMORY_PER_ITEM_GB)))
 
 
 def load_ultralytics_config(config_path: Path) -> dict:
@@ -109,9 +93,7 @@ def main() -> None:
 
     train_device = 0 if torch.cuda.is_available() else "cpu"
     train_workers = pick_dataloader_workers()
-    batch_size = pick_batch_size(train_device)
 
-    model = YOLO(MODEL)
     for previous_split, current_split, new_files in iter_split_batches(all_train_images, splits):
         copy_split_files(new_files, split_train_dir)
         model = YOLO(MODEL)
@@ -120,7 +102,7 @@ def main() -> None:
             epochs=100,
             project="WebIdentification",
             name=f"yolo26n_split_{previous_split}_{current_split}-0",
-            batch=batch_size,
+            batch=BATCH_UTILIZATION_TARGET,
             imgsz=640,
             workers=train_workers,
             device=train_device,
