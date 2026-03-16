@@ -2,6 +2,9 @@ name: Publish Containers
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
 
 env:
   REGISTRY: ghcr.io

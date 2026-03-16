@@ -1,0 +1,26 @@
+services:
+  selenium:
+    image: selenium/standalone-chrome:4.31.0
+    container_name: webidentification_selenium
+    ports:
+      - "4444:4444"
+      - "7900:7900"
+    shm_size: "2gb"
+
+  model_backend:
+    image: ghcr.io/uplink036/webidentification-model-backend:latest
+    container_name: webidentification_model_backend
+    ports:
+      - "8000:8000"
+
+  frontend:
+    image: ghcr.io/uplink036/webidentification-frontend:latest
+    container_name: webidentification_frontend
+    environment:
+      MODEL_SERVER_URL: http://model_backend:8000/predict_draw
+      SELENIUM_REMOTE_URL: http://selenium:4444/wd/hub
+    depends_on:
+      - selenium
+      - model_backend
+    ports:
+      - "8010:8010"

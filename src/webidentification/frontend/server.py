@@ -7,8 +7,8 @@ import dotenv
 import httpx
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.concurrency import run_in_threadpool
-from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.responses import FileResponse, Response
+from PIL import Image
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.chrome.options import Options
