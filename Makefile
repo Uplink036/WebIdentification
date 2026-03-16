@@ -27,9 +27,11 @@ fetch_data: ## Fetch data into ultralytics format as a ZIP file
 data_pipeline: load_data fetch_data ## Run the full data pipeline
 	@echo "Running the full data pipeline..."
 
+.PHONY: model_backend
 model_backend: ## Build the model backend Docker image
 	docker build -f ./containers/model_backend/Dockerfile -t webidentification_model_backend:latest .
 
+.PHONY: frontend
 frontend: ## Build the frontend Docker image
 	docker build -f ./containers/frontend/Dockerfile -t webidentification_frontend:latest .
 
