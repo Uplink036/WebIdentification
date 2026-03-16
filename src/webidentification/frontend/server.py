@@ -22,6 +22,7 @@ UI_PATH = Path(__file__).with_name("ui.html")
 
 def _create_driver(width: int = 1920, height: int = 1080) -> webdriver.Remote:
     options = Options()
+    options.accept_insecure_certs = True
     options.add_argument("--headless=new")
     options.add_argument("--disable-gpu")
     options.add_argument("--disable-dev-shm-usage")
