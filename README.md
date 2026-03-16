@@ -100,3 +100,22 @@ Start an agent with the returned sweep ID:
 ```bash
 python src/webidentification/cli/sweep.py --sweep-id <your_sweep_id>
 ```
+
+## Frontend Screenshot + Forward Container
+
+Run the frontend/backend stack with Docker Compose:
+
+```bash
+docker compose up -d --build selenium model_backend frontend
+```
+To start everything in `compose.yaml`:
+
+```bash
+docker compose up -d --build
+```
+
+To stop services:
+
+```bash
+docker compose down
+```
