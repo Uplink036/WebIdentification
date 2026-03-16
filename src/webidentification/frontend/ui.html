@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>WebIdentification UI</title>
+    <style>
+      :root {
+        --bg: #f4efe6;
+        --panel: #fffdf8;
+        --ink: #1f2a2e;
+        --accent: #0a5c6b;
+        --accent2: #e39b13;
+        --line: #d8d1bf;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 0% 0%, #e7f0d8 0%, transparent 40%),
+          radial-gradient(circle at 100% 100%, #fde9bf 0%, transparent 45%),
+          var(--bg);
+      }
+      main {
+        width: min(980px, 92vw);
+        margin: 30px auto;
+        display: grid;
+        gap: 16px;
+      }
+      .panel {
+        background: var(--panel);
+        border: 2px solid var(--line);
+        border-radius: 14px;
+        padding: 16px;
+        box-shadow: 0 8px 26px rgba(0, 0, 0, 0.06);
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: clamp(1.4rem, 2.5vw, 2.1rem);
+      }
+      p {
+        margin: 0;
+        opacity: 0.82;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 12px;
+      }
+      .wide {
+        grid-column: 1 / -1;
+      }
+      label {
+        font-size: 0.9rem;
+        font-weight: 700;
+        margin-bottom: 6px;
+        display: block;
+      }
+      input,
+      select {
+        width: 100%;
+        border: 2px solid var(--line);
+        border-radius: 10px;
+        padding: 10px;
+        font: inherit;
+        background: #fff;
+      }
+      .row {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-top: 10px;
+      }
+      .action-controls {
+        margin-top: 0;
+        width: 100%;
+      }
+      .action-controls select {
+        flex: 1 1 auto;
+        min-width: 260px;
+      }
+      .action-controls button {
+        flex: 0 0 auto;
+        white-space: nowrap;
+      }
+      @media (max-width: 720px) {
+        .action-controls {
+          flex-wrap: wrap;
+        }
+        .action-controls select {
+          min-width: 100%;
+        }
+      }
+      button {
+        border: 0;
+        border-radius: 999px;
+        padding: 10px 16px;
+        font: inherit;
+        font-weight: 800;
+        cursor: pointer;
+        background: var(--accent);
+        color: #fff;
+      }
+      button.alt {
+        background: var(--accent2);
+        color: #2b1a00;
+      }
+      #status {
+        min-height: 1.4em;
+        font-weight: 700;
+      }
+      #preview {
+        width: 100%;
+        border: 2px dashed var(--line);
+        border-radius: 10px;
+        min-height: 180px;
+        object-fit: contain;
+        background: #fff;
+      }
+      #gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 12px;
+        margin-top: 12px;
+      }
+      .thumb {
+        border: 2px solid var(--line);
+        border-radius: 10px;
+        background: #fff;
+        padding: 8px;
+      }
+      .thumb img {
+        width: 100%;
+        display: block;
+        border-radius: 6px;
+      }
+      .thumb p {
+        margin-top: 6px;
+        font-size: 0.85rem;
+      }
+      pre {
+        border: 2px solid var(--line);
+        border-radius: 10px;
+        padding: 10px;
+        background: #fff;
+        max-height: 320px;
+        overflow: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="panel">
+        <h1>WebIdentification Frontend</h1>
+      </section>
+
+      <section class="panel">
+        <div class="grid">
+          <div class="wide">
+            <label for="url">Target URL</label>
+            <input id="url" type="url" value="https://example.com" placeholder="https://example.com" />
+          </div>
+
+          <div class="wide">
+            <label for="mode">Action</label>
+            <div class="row action-controls">
+              <select id="mode">
+                <option value="screenshot">Screenshot only</option>
+                <option value="forward" selected>Screenshot and forward</option>
+              </select>
+              <button id="runBtn">Run</button>
+              <button id="clearBtn" class="alt" type="button">Clear</button>
+            </div>
+          </div>
+        </div>
+        <p id="status"></p>
+      </section>
+
+      <section class="panel">
+        <img id="preview" alt="Preview appears here" />
+        <div id="gallery"></div>
+        <pre id="json"></pre>
+      </section>
+    </main>
+
+    <script>
+      const runBtn = document.getElementById("runBtn");
+      const clearBtn = document.getElementById("clearBtn");
+      const statusEl = document.getElementById("status");
+      const previewEl = document.getElementById("preview");
+      const galleryEl = document.getElementById("gallery");
+      const jsonEl = document.getElementById("json");
+
+      function setStatus(message, isError = false) {
+        statusEl.textContent = message;
+        statusEl.style.color = isError ? "#9b2226" : "#1f2a2e";
+      }
+
+      function renderSlices(slices) {
+        galleryEl.innerHTML = "";
+        if (!Array.isArray(slices) || slices.length === 0) {
+          return;
+        }
+
+        const imageSlices = slices.filter((slice) => slice.image_base64);
+        if (imageSlices.length > 0) {
+          previewEl.src = `data:${imageSlices[0].media_type || "image/png"};base64,${imageSlices[0].image_base64}`;
+        }
+
+        for (const slice of imageSlices) {
+          const item = document.createElement("div");
+          item.className = "thumb";
+
+          const img = document.createElement("img");
+          img.src = `data:${slice.media_type || "image/png"};base64,${slice.image_base64}`;
+          img.alt = `Slice ${slice.index}`;
+
+          const label = document.createElement("p");
+          label.textContent = `Slice ${slice.index} at offset ${slice.offset}`;
+
+          item.appendChild(img);
+          item.appendChild(label);
+          galleryEl.appendChild(item);
+        }
+      }
+
+      runBtn.addEventListener("click", async () => {
+        setStatus("Running...");
+        previewEl.removeAttribute("src");
+        galleryEl.innerHTML = "";
+        jsonEl.textContent = "";
+
+        const payload = {
+          url: document.getElementById("url").value,
+        };
+
+        const mode = document.getElementById("mode").value;
+
+        try {
+          let response;
+          if (mode === "forward") {
+            const params = new URLSearchParams({ url: payload.url });
+            response = await fetch(`/screenshot/forward?${params.toString()}`, {
+              method: "POST",
+            });
+          } else {
+            const params = new URLSearchParams({ url: payload.url });
+            response = await fetch(`/screenshot?${params.toString()}`, {
+              method: "POST",
+            });
+          }
+
+          if (!response.ok) {
+            const text = await response.text();
+            throw new Error(text || `Request failed (${response.status})`);
+          }
+
+          const contentType = response.headers.get("content-type") || "";
+          if (contentType.includes("image/")) {
+            const blob = await response.blob();
+            previewEl.src = URL.createObjectURL(blob);
+            setStatus("Done. Image response received.");
+          } else {
+            const data = await response.json();
+            if (Array.isArray(data.slices)) {
+              renderSlices(data.slices);
+            }
+            jsonEl.textContent = JSON.stringify(data, null, 2);
+            setStatus("Done. JSON response received.");
+          }
+        } catch (error) {
+          setStatus(`Error: ${error.message}`, true);
+        }
+      });
+
+      clearBtn.addEventListener("click", () => {
+        setStatus("");
+        previewEl.removeAttribute("src");
+        galleryEl.innerHTML = "";
+        jsonEl.textContent = "";
+      });
+    </script>
+  </body>
+</html>
