@@ -1,0 +1,4 @@
+pillow~=12.1
+ultralytics-opencv-headless~=8.4
+fastapi~=0.135
+python-dotenv~=1.2
