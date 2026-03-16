@@ -23,11 +23,15 @@ Show available commands:
 
 ```bash
 $ make help
+data_pipeline   Run the full data pipeline...
 data_loader     Build the data loader Docker image
 database        Start the Neo4j database container
+fetch_data      Fetch data into ultralytics format as a ZIP file
+frontend        Build the frontend Docker image
 help            Show this help
 install         Install the package and its dependencies
 load_data       Load data into the database
+model_backend   Build the model backend Docker image
 ```
 
 ## Locally Running the Pipeline
@@ -95,4 +99,23 @@ Start an agent with the returned sweep ID:
 
 ```bash
 python src/webidentification/cli/sweep.py --sweep-id <your_sweep_id>
+```
+
+## Frontend Screenshot + Forward Container
+
+Run the frontend/backend stack with Docker Compose:
+
+```bash
+docker compose up -d --build selenium model_backend frontend
+```
+To start everything in `compose.yaml`:
+
+```bash
+docker compose up -d --build
+```
+
+To stop services:
+
+```bash
+docker compose down
 ```

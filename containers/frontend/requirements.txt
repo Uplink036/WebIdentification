@@ -1,0 +1,6 @@
+fastapi[standard]~=0.135
+httpx~=0.28
+pillow~=12.1
+pydantic~=2.12
+python-dotenv~=1.2
+selenium~=4.35

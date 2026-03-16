@@ -18,6 +18,10 @@ dependencies = [
     "dotenv",
     "tqdm",
     "torch",
+    "fastapi",
+    "uvicorn",
+    "selenium",
+    "httpx",
 ]
 requires-python = ">=3.12"
 
