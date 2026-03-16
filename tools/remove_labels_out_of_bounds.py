@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from dataclasses import dataclass
 import yaml
 import tqdm
 
