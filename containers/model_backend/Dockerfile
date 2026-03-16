@@ -1,6 +1,6 @@
 FROM python:3.12
 
-WORKDIR /app 
+WORKDIR /app
 COPY ./containers/model_backend/requirements.txt .
 RUN pip install -r requirements.txt
 
