@@ -27,6 +27,12 @@ fetch_data: ## Fetch data into ultralytics format as a ZIP file
 data_pipeline: load_data fetch_data ## Run the full data pipeline
 	@echo "Running the full data pipeline..."
 
+model_backend: ## Build the model backend Docker image
+	docker build -f ./containers/model_backend/Dockerfile -t webidentification_model_backend:latest .
+
+frontend: ## Build the frontend Docker image
+	docker build -f ./containers/frontend/Dockerfile -t webidentification_frontend:latest .
+
 .PHONY: help 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
