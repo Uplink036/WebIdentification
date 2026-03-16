@@ -23,11 +23,15 @@ Show available commands:
 
 ```bash
 $ make help
+data_pipeline   Run the full data pipeline...
 data_loader     Build the data loader Docker image
 database        Start the Neo4j database container
+fetch_data      Fetch data into ultralytics format as a ZIP file
+frontend        Build the frontend Docker image
 help            Show this help
 install         Install the package and its dependencies
 load_data       Load data into the database
+model_backend   Build the model backend Docker image
 ```
 
 ## Locally Running the Pipeline
