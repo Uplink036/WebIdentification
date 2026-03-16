@@ -5,6 +5,7 @@ dataset/
 mobile_dataset/
 screenshots/
 *.pt
+!containers/model_backend/models/yolo.pt
 *.zip
 coco8.yaml
 data/
