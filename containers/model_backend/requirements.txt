@@ -1,4 +1,6 @@
 pillow~=12.1
+torch~=2.10
+torchvision~=0.25
 ultralytics-opencv-headless~=8.4
-fastapi~=0.135
+fastapi[standard]~=0.135
 python-dotenv~=1.2

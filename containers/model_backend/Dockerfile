@@ -2,7 +2,7 @@ FROM python:3.12
 
 WORKDIR /app
 COPY ./containers/model_backend/requirements.txt .
-RUN pip install -r requirements.txt
+RUN pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
 
 
 COPY ./containers/model_backend/models/ ./models/
