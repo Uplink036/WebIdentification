@@ -25,6 +25,7 @@
 		"--gpus",
 		"all",
 		"--network",
-		"host"
+		"host",
+		"--shm-size=8g"
 	]
 }
