@@ -1,8 +1,7 @@
-import os
 from dataclasses import dataclass
 from pathlib import Path
 
-import tqdm
+from tqdm import tqdm
 import yaml
 
 DATA_CONFIGURATION = yaml.safe_load(

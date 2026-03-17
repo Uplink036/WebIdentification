@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-import tqdm
+from tqdm import tqdm
 import yaml
 
 DATA_CONFIGURATION = yaml.safe_load(
@@ -23,7 +23,7 @@ class BBox:
 
 for split in SPLITS:
     label_paths = list((DATA_DIR / split).glob("*.txt"))
-    for label_path in tqdm(label_paths, desc=f"Processing {split}", unit="file"):
+    for label_path in tqdm.tqdm(label_paths, desc=f"Processing {split}", unit="file"):
         overlaps = []
         with open(label_path) as f:
             lines = [line.strip() for line in f if line.strip()]
