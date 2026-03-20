@@ -2,6 +2,9 @@
 install: ## Install the package and its dependencies
 	pip install -e .[all]
 
+install_cpu: ## Install the package and its dependencies, does not install cuda
+	pip install -e .[all] --extra-index-url https://download.pytorch.org/whl/cpu
+
 .PHONY: database
 database: ## Start the Neo4j database container
 	docker run \
