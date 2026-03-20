@@ -15,7 +15,7 @@ SPLITS = ["train", "val", "test"]
 for split in SPLITS:
     label_paths = list((DATA_DIR / split).glob("*.txt"))
     lines_removed = 0
-    for label_path in tqdm.tqdm(label_paths, desc=f"Processing {split}", unit="file"):
+    for label_path in tqdm(label_paths, desc=f"Processing {split}", unit="file"):
         with open(label_path) as f:
             lines = [line.strip() for line in f if line.strip()]
 
