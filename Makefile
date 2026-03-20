@@ -2,6 +2,9 @@
 install: ## Install the package and its dependencies
 	pip install -e .[all]
 
+install_cpu: ## Install the package and its dependencies, does not install cuda
+	pip install -e .[all] --extra-index-url https://download.pytorch.org/whl/cpu
+
 .PHONY: database
 database: ## Start the Neo4j database container
 	docker run \
@@ -34,6 +37,14 @@ model_backend: ## Build the model backend Docker image
 .PHONY: frontend
 frontend: ## Build the frontend Docker image
 	docker build -f ./containers/frontend/Dockerfile -t webidentification_frontend:latest .
+
+lint: ## Lint the src and tools directory
+	python3 -m isort src/ tools/
+	python3 -m black src/ tools/
+
+lint_check: ## Check for linting issues in the src and tools directory
+	python3 -m isort --check src/ tools/
+	python3 -m black --check src/ tools/
 
 .PHONY: help 
 help: ## Show this help

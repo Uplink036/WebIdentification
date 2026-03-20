@@ -11,24 +11,34 @@ from ultralytics import RTDETR, YOLO
 
 dotenv.load_dotenv()
 
-MODEL_PATH = Path(os.getenv("MODEL_PATH", "/workspaces/WebIdentification/containers/model_backend/models/yolo.pt"))
+MODEL_PATH = Path(
+    os.getenv(
+        "MODEL_PATH",
+        "/workspaces/WebIdentification/containers/model_backend/models/yolo.pt",
+    )
+)
 if not MODEL_PATH.is_file() or MODEL_PATH.suffix.lower() != ".pt":
     raise ValueError(f"MODEL_PATH must point to an existing .pt file, got {MODEL_PATH}")
 
 
 def _build_model():
-    return YOLO(MODEL_PATH) if MODEL_PATH.name.startswith("yolo") else RTDETR(MODEL_PATH)
+    return (
+        YOLO(MODEL_PATH) if MODEL_PATH.name.startswith("yolo") else RTDETR(MODEL_PATH)
+    )
 
 
 def _predict_once(pil_image: Image.Image):
     model = _build_model()
     return model(pil_image)
 
+
 app = FastAPI()
+
 
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
+
 
 @app.post("/predict")
 async def predict(request: Request):
@@ -53,10 +63,11 @@ async def predict(request: Request):
         ]
         return {"predictions": predictions}
     except UnidentifiedImageError:
-        raise HTTPException(status_code=400, detail="Uploaded file is not a valid image")
+        raise HTTPException(
+            status_code=400, detail="Uploaded file is not a valid image"
+        )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-
 
 
 @app.post("/predict_draw")
@@ -75,6 +86,8 @@ async def predict_draw(request: Request):
         im_rgb.save(output, format="PNG")
         return Response(content=output.getvalue(), media_type="image/png")
     except UnidentifiedImageError:
-        raise HTTPException(status_code=400, detail="Uploaded file is not a valid image")
+        raise HTTPException(
+            status_code=400, detail="Uploaded file is not a valid image"
+        )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
