@@ -36,3 +36,4 @@ all = ["webidentification[dev]"]
 
 [tool.black]
 line-length = 88
+
