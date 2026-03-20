@@ -1,8 +1,8 @@
 import os
 from pathlib import Path
 
-from tqdm import tqdm
 import yaml
+from tqdm import tqdm
 
 DATA_CONFIGURATION = yaml.safe_load(
     Path("/workspaces/WebIdentification/cv_webidentification.yaml").read_text()

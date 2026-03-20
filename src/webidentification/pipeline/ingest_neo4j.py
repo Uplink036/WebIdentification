@@ -6,10 +6,11 @@ import sys
 import time
 from io import BytesIO
 
-from datasets import load_dataset
 from neo4j import GraphDatabase
 from neo4j.exceptions import AuthError, ServiceUnavailable
 from tqdm import tqdm
+
+from datasets import load_dataset
 
 URI = os.getenv("URI", "bolt://localhost:7687")
 AUTH = (os.getenv("USERNAME", "neo4j"), os.getenv("PASSWORD", "password"))
