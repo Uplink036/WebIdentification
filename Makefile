@@ -35,6 +35,18 @@ model_backend: ## Build the model backend Docker image
 frontend: ## Build the frontend Docker image
 	docker build -f ./containers/frontend/Dockerfile -t webidentification_frontend:latest .
 
+lint: ## Lint the src and tools directory
+	python3 -m isort src/
+	python3 -m isort tools/
+	python3 -m black src/
+	python3 -m black tools/
+
+lint_check: ## Check for linting issues in the src and tools directory
+	python3 -m isort --check src/
+	python3 -m isort --check tools/
+	python3 -m black --check src/
+	python3 -m black --check tools/
+
 .PHONY: help 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
