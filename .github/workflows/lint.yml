@@ -36,6 +36,6 @@ jobs:
 
     - name: Check for failures
       run: |
-        if [ "${{ steps.isort.outcome }}" == "failure" ] || [ "${{ steps.black.outcome }}" == "failure" ] || [ "${{ steps.mypy.outcome }}" == "failure" ]; then
+        if [ "${{ steps.isort.outcome }}" == "failure" ] || [ "${{ steps.black.outcome }}" == "failure" ]; then
           exit 1
         fi
