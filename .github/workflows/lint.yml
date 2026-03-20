@@ -1,0 +1,41 @@
+# This workflow will install Python dependencies, run tests and lint with a single version of Python
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+name: Lint Python
+
+on:
+  push:
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.12"
+
+    - name: Install dependencies
+      run: |
+        make install
+
+    - name: Lint isort
+      id: isort
+      run: |
+        python -m isort --check --diff src/ tools/
+      continue-on-error: true
+
+    - name: Lint black
+      id: black
+      run: |
+        python -m black --check --diff src/ tools/
+      continue-on-error: true
+
+    - name: Check for failures
+      run: |
+        if [ "${{ steps.isort.outcome }}" == "failure" ] || [ "${{ steps.black.outcome }}" == "failure" ] || [ "${{ steps.mypy.outcome }}" == "failure" ]; then
+          exit 1
+        fi
