@@ -2,9 +2,10 @@ import os
 from pathlib import Path
 
 import torch
-import wandb
 from dotenv import load_dotenv
 from ultralytics import RTDETR, YOLO, settings
+
+import wandb
 
 CONFIG_PATH = Path("cv_webidentification.yaml")
 MAX_WORKERS = 4
