@@ -12,6 +12,8 @@ data/
 CV_WebIdentification*/
 runs/
 wandb/
+clustimage_images/
+k_fold_splits/
 
 # Created by https://www.toptal.com/developers/gitignore/api/python
 # Edit at https://www.toptal.com/developers/gitignore?templates=python
