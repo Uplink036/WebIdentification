@@ -11,34 +11,49 @@ from ultralytics import RTDETR, YOLO
 
 dotenv.load_dotenv()
 
-MODEL_PATH = Path(
+MODEL_DIR = Path(
     os.getenv(
-        "MODEL_PATH",
-        "/workspaces/WebIdentification/containers/model_backend/models/yolo.pt",
+        "MODEL_DIR",
+        "/workspaces/WebIdentification/containers/model_backend/models/",
     )
 )
-if not MODEL_PATH.is_file() or MODEL_PATH.suffix.lower() != ".pt":
-    raise ValueError(f"MODEL_PATH must point to an existing .pt file, got {MODEL_PATH}")
 
 
-def _build_model():
+def _get_all_models() -> list[Path]:
+    return list(MODEL_DIR.glob("*.pt"))
+
+assert len(_get_all_models()) > 0, f"No model files found in {MODEL_DIR}. Please ensure at least one .pt file is present."
+
+def _build_model(model_name: str = None):
+    range_models = _get_all_models()
+    names = [model.name for model in range_models]
+    if model_name and model_name in names:
+        model_index = names.index(model_name)
+        model_path = _get_all_models()[model_index]
+        print(f"Using model: {model_path}")
+    else:
+        raise ValueError(f"Model {model_name} not found in {MODEL_DIR}. Available models: {names}")
+
+    if model_name is None:
+        model_path = range_models[0]
+        print(f"No model specified. Defaulting to: {model_path}")
     return (
-        YOLO(MODEL_PATH) if MODEL_PATH.name.startswith("yolo") else RTDETR(MODEL_PATH)
+        YOLO(MODEL_DIR) if MODEL_DIR.name.startswith("yolo") else RTDETR(MODEL_DIR)
     )
-
 
 def _predict_once(pil_image: Image.Image):
     model = _build_model()
     return model(pil_image)
 
-
 app = FastAPI()
 
+@app.get("/healthcheck")
+async def health():
+    return {"message": "Ok"}
 
-@app.get("/")
-async def root():
-    return {"message": "Hello World"}
-
+@app.get("/get_models")
+async def get_models():
+    return {"models": [model.name for model in _get_all_models()]}
 
 @app.post("/predict")
 async def predict(request: Request):
