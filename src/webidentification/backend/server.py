@@ -24,26 +24,36 @@ def _get_all_models() -> list[Path]:
 
 assert len(_get_all_models()) > 0, f"No model files found in {MODEL_DIR}. Please ensure at least one .pt file is present."
 
-def _build_model(model_name: str = None):
+def _load_model_from_path(model_path: Path):
+    """Load the given model on request (no caching).
+
+    A fresh model instance is created each time this is called.
+    """
+    if model_path.name.lower().startswith("yolo"):
+        model = YOLO(str(model_path))
+    else:
+        model = RTDETR(str(model_path))
+    print(f"Loaded model: {model_path}")
+    return model
+
+
+def _build_model(model_name: str | None = None):
     range_models = _get_all_models()
     names = [model.name for model in range_models]
-    if model_name and model_name in names:
-        model_index = names.index(model_name)
-        model_path = _get_all_models()[model_index]
+    if model_name:
+        if model_name not in names:
+            raise ValueError(f"Model {model_name} not found in {MODEL_DIR}. Available models: {names}")
+        model_path = range_models[names.index(model_name)]
         print(f"Using model: {model_path}")
     else:
-        raise ValueError(f"Model {model_name} not found in {MODEL_DIR}. Available models: {names}")
-
-    if model_name is None:
         model_path = range_models[0]
         print(f"No model specified. Defaulting to: {model_path}")
-    return (
-        YOLO(MODEL_DIR) if MODEL_DIR.name.startswith("yolo") else RTDETR(MODEL_DIR)
-    )
+    return _load_model_from_path(model_path)
 
-def _predict_once(pil_image: Image.Image):
-    model = _build_model()
+def _predict_once(pil_image: Image.Image, model_name: str | None = None):
+    model = _build_model(model_name)
     return model(pil_image)
+
 
 app = FastAPI()
 
@@ -56,25 +66,22 @@ async def get_models():
     return {"models": [model.name for model in _get_all_models()]}
 
 @app.post("/predict")
-async def predict(request: Request):
+async def predict(request: Request, model: str | None = None):
     try:
         data = await request.body()
         if not data:
             raise HTTPException(status_code=400, detail="Request body is empty")
 
         pil_image = Image.open(BytesIO(data)).convert("RGB")
-        results = await run_in_threadpool(_predict_once, pil_image)
+        results = await run_in_threadpool(_predict_once, pil_image, model)
+        boxes = results[0].boxes
+        cls_list = boxes.cls.tolist()
+        conf_list = boxes.conf.tolist()
+        xywhn_list = boxes.xywhn.tolist()
+
         predictions = [
-            {
-                "class": int(cls),
-                "confidence": float(conf),
-                "box": {"xywhn": box},
-            }
-            for cls, conf, box in zip(
-                results[0].boxes.cls,
-                results[0].boxes.conf,
-                results[0].boxes.xywhn.tolist(),
-            )
+            {"class": int(c), "confidence": float(conf), "box": {"xywhn": box}}
+            for c, conf, box in zip(cls_list, conf_list, xywhn_list)
         ]
         return {"predictions": predictions}
     except UnidentifiedImageError:
@@ -86,14 +93,14 @@ async def predict(request: Request):
 
 
 @app.post("/predict_draw")
-async def predict_draw(request: Request):
+async def predict_draw(request: Request, model: str | None = None):
     try:
         data = await request.body()
         if not data:
             raise HTTPException(status_code=400, detail="Request body is empty")
 
         pil_image = Image.open(BytesIO(data)).convert("RGB")
-        results = await run_in_threadpool(_predict_once, pil_image)
+        results = await run_in_threadpool(_predict_once, pil_image, model)
 
         im_bgr = results[0].plot()
         im_rgb = Image.fromarray(im_bgr[..., ::-1])
