@@ -29,10 +29,13 @@ def _load_model_from_path(model_path: Path):
 
     A fresh model instance is created each time this is called.
     """
-    if model_path.name.lower().startswith("yolo"):
-        model = YOLO(str(model_path))
-    else:
-        model = RTDETR(str(model_path))
+    try:
+        if model_path.name.lower().startswith("yolo"):
+            model = YOLO(str(model_path))
+        else:
+            model = RTDETR(str(model_path))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to load model {model_path.name}: {e}")
     print(f"Loaded model: {model_path}")
     return model
 
@@ -42,7 +45,7 @@ def _build_model(model_name: str | None = None):
     names = [model.name for model in range_models]
     if model_name:
         if model_name not in names:
-            raise ValueError(f"Model {model_name} not found in {MODEL_DIR}. Available models: {names}")
+            raise HTTPException(status_code=400, detail=f"Model {model_name} not found. Available models: {names}")
         model_path = range_models[names.index(model_name)]
         print(f"Using model: {model_path}")
     else:
@@ -85,11 +88,11 @@ async def predict(request: Request, model: str | None = None):
         ]
         return {"predictions": predictions}
     except UnidentifiedImageError:
-        raise HTTPException(
-            status_code=400, detail="Uploaded file is not a valid image"
-        )
+        raise HTTPException(status_code=400, detail="Uploaded file is not a valid image")
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/predict_draw")
@@ -108,8 +111,8 @@ async def predict_draw(request: Request, model: str | None = None):
         im_rgb.save(output, format="PNG")
         return Response(content=output.getvalue(), media_type="image/png")
     except UnidentifiedImageError:
-        raise HTTPException(
-            status_code=400, detail="Uploaded file is not a valid image"
-        )
+        raise HTTPException(status_code=400, detail="Uploaded file is not a valid image")
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
