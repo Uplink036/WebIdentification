@@ -290,7 +290,7 @@
           if (!resp.ok) return;
           const data = await resp.json();
           const sel = document.getElementById('modelSelect');
-          sel.innerHTML = '';
+          sel.innerHTML = "";
           if (Array.isArray(data.models)) {
             for (const m of data.models) {
               const opt = document.createElement('option');
