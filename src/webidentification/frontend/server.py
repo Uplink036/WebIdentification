@@ -1,5 +1,6 @@
 import os
 import time
+import urllib.parse
 from io import BytesIO
 from pathlib import Path
 
@@ -12,7 +13,6 @@ from PIL import Image
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.chrome.options import Options
-import urllib.parse
 
 dotenv.load_dotenv()
 
@@ -191,6 +191,7 @@ async def models() -> dict[str, list[str]]:
     model_names = [name for name in raw_models if isinstance(name, str)]
     return {"models": model_names}
 
+
 @app.post("/screenshot")
 async def screenshot(
     url: str = Query(..., description="URL of the page to capture")
@@ -206,7 +207,9 @@ async def screenshot(
 @app.post("/screenshot/forward")
 async def screenshot_and_forward(
     url: str = Query(..., description="URL of the page to capture and forward"),
-    model: str | None = Query(None, description="Model filename to use on the model server"),
+    model: str | None = Query(
+        None, description="Model filename to use on the model server"
+    ),
 ) -> Response:
     try:
         slices = await run_in_threadpool(_take_screenshot, url)
@@ -221,7 +224,9 @@ async def screenshot_and_forward(
         ) from exc
 
 
-async def _forward_screenshot_slices(slices: list[tuple[int, bytes]], base_model_url: str, model: str | None = None) -> Response:
+async def _forward_screenshot_slices(
+    slices: list[tuple[int, bytes]], base_model_url: str, model: str | None = None
+) -> Response:
     """Forward screenshot slices to a single model (optionally selected).
 
     If `model` is provided, it's appended as the `model` query parameter to `base_model_url`.
