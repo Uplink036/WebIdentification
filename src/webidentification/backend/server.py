@@ -27,7 +27,7 @@ MODEL_DIR = Path(
 
 
 def _get_all_models() -> list[Path]:
-    return list(MODEL_DIR.glob("*.pt"))
+    return sorted(MODEL_DIR.glob("*.pt"))
 
 
 assert (
