@@ -1,9 +1,9 @@
 import argparse
 import os
 
+import wandb
 from dotenv import load_dotenv
 
-import wandb
 from webidentification.training.sweep_train import run_sweep_train
 
 
