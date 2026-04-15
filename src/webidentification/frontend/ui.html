@@ -172,6 +172,9 @@
                 <option value="screenshot">Screenshot only</option>
                 <option value="forward" selected>Screenshot and forward</option>
               </select>
+              <select id="modelSelect">
+                <option value="" disabled selected>Loading models...</option>
+              </select>
               <button id="runBtn">Run</button>
               <button id="clearBtn" class="alt" type="button">Clear</button>
             </div>
@@ -242,16 +245,13 @@
 
         try {
           let response;
+          const params = new URLSearchParams({ url: payload.url });
+          const selectedModel = document.getElementById("modelSelect").value;
+          if (selectedModel) params.append("model", selectedModel);
           if (mode === "forward") {
-            const params = new URLSearchParams({ url: payload.url });
-            response = await fetch(`/screenshot/forward?${params.toString()}`, {
-              method: "POST",
-            });
+            response = await fetch(`/screenshot/forward?${params.toString()}`, { method: "POST" });
           } else {
-            const params = new URLSearchParams({ url: payload.url });
-            response = await fetch(`/screenshot?${params.toString()}`, {
-              method: "POST",
-            });
+            response = await fetch(`/screenshot?${params.toString()}`, { method: "POST" });
           }
 
           if (!response.ok) {
@@ -283,6 +283,44 @@
         galleryEl.innerHTML = "";
         jsonEl.textContent = "";
       });
+
+      async function loadModels() {
+        try {
+          const resp = await fetch('/models');
+          if (!resp.ok) return;
+          const data = await resp.json();
+          const sel = document.getElementById('modelSelect');
+          sel.innerHTML = '';
+          if (Array.isArray(data.models)) {
+            for (const m of data.models) {
+              const opt = document.createElement('option');
+              opt.value = m;
+              opt.textContent = m;
+              sel.appendChild(opt);
+            }
+          }
+
+          if (sel.options.length === 0) {
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.textContent = 'No models found';
+            opt.disabled = true;
+            opt.selected = true;
+            sel.appendChild(opt);
+          }
+        } catch (e) {
+          const sel = document.getElementById('modelSelect');
+          sel.innerHTML = '';
+          const opt = document.createElement('option');
+          opt.value = '';
+          opt.textContent = 'Failed to load models';
+          opt.disabled = true;
+          opt.selected = true;
+          sel.appendChild(opt);
+        }
+      }
+
+      loadModels();
     </script>
   </body>
 </html>
