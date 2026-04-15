@@ -50,7 +50,7 @@ k8s_up: ## Deploy the Kubernetes resources from k8s.yaml
 	kubectl apply -f k8s.yaml
 
 .PHONY: k8s_frontend
-k8s_frontend: ## Forward the frontend service to 0.0.0.0:8010
+k8s_frontend: ## Forward the ingress-nginx controller service to 0.0.0.0:8010
 	kubectl port-forward --address 0.0.0.0 -n ingress-nginx svc/ingress-nginx-controller 8010:80
 
 k8s_down: ## Remove the Kubernetes resources from k8s.yaml
