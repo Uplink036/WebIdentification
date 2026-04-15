@@ -46,6 +46,16 @@ lint_check: ## Check for linting issues in the src and tools directory
 	python3 -m isort --check src/ tools/
 	python3 -m black --check src/ tools/
 
+k8s_up: ## Deploy the Kubernetes resources from k8s.yaml
+	kubectl apply -f k8s.yaml
+
+.PHONY: k8s_frontend
+k8s_frontend: ## Forward the ingress-nginx controller service to 0.0.0.0:8010
+	kubectl port-forward --address 0.0.0.0 -n ingress-nginx svc/ingress-nginx-controller 8010:80
+
+k8s_down: ## Remove the Kubernetes resources from k8s.yaml
+	kubectl delete -f k8s.yaml
+
 .PHONY: help 
 help: ## Show this help
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'

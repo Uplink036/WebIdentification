@@ -1,5 +1,6 @@
 import os
 import time
+import urllib.parse
 from io import BytesIO
 from pathlib import Path
 
@@ -136,6 +137,12 @@ async def _forward_to_model(
     return result.content
 
 
+def _build_models_url(base_model_url: str) -> str:
+    """Derive backend /get_models URL from configured prediction URL."""
+    parsed = urllib.parse.urlparse(base_model_url)
+    return urllib.parse.urlunparse(parsed._replace(path="/get_models", query=""))
+
+
 app = FastAPI(title="WebIdentification Frontend")
 
 
@@ -147,6 +154,42 @@ async def root() -> FileResponse:
 @app.get("/health")
 async def health() -> dict[str, str]:
     return {"message": "Frontend service is running"}
+
+
+@app.get("/models")
+async def models() -> dict[str, list[str]]:
+    models_url = _build_models_url(DEFAULT_MODEL_URL)
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            result = await client.get(models_url)
+    except httpx.HTTPError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Failed to reach model server get_models endpoint: {exc}",
+        ) from exc
+
+    if result.status_code >= 400:
+        detail = result.text or "Model server get_models request failed"
+        raise HTTPException(status_code=result.status_code, detail=detail)
+
+    try:
+        payload = result.json()
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="Model server returned invalid JSON from get_models",
+        ) from exc
+
+    raw_models = payload.get("models") if isinstance(payload, dict) else None
+    if not isinstance(raw_models, list):
+        raise HTTPException(
+            status_code=502,
+            detail="Model server response missing 'models' list",
+        )
+
+    model_names = [name for name in raw_models if isinstance(name, str)]
+    return {"models": model_names}
 
 
 @app.post("/screenshot")
@@ -163,24 +206,50 @@ async def screenshot(
 
 @app.post("/screenshot/forward")
 async def screenshot_and_forward(
-    url: str = Query(..., description="URL of the page to capture and forward")
+    url: str = Query(..., description="URL of the page to capture and forward"),
+    model: str | None = Query(
+        None, description="Model filename to use on the model server"
+    ),
 ) -> Response:
     try:
         slices = await run_in_threadpool(_take_screenshot, url)
-        model_slices: list[tuple[int, bytes]] = []
-        for offset, png_bytes in slices:
-            model_png_bytes = await _forward_to_model(
-                model_url=DEFAULT_MODEL_URL,
-                image_bytes=png_bytes,
-                timeout_seconds=30,
-            )
-            model_slices.append((offset, model_png_bytes))
 
-        model_stitch = await run_in_threadpool(_stitch_slices, model_slices)
-        return Response(content=model_stitch, media_type="image/png")
+        # forward to a single selected model (if provided)
+        return await _forward_screenshot_slices(slices, DEFAULT_MODEL_URL, model=model)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except httpx.HTTPError as exc:
         raise HTTPException(
             status_code=502, detail=f"Failed to reach model server: {exc}"
         ) from exc
+
+
+async def _forward_screenshot_slices(
+    slices: list[tuple[int, bytes]], base_model_url: str, model: str | None = None
+) -> Response:
+    """Forward screenshot slices to a single model (optionally selected).
+
+    If `model` is provided, it's appended as the `model` query parameter to `base_model_url`.
+    Returns a stitched PNG response from the model server.
+    """
+    # build model-specific URL if provided
+    if model:
+        parsed = urllib.parse.urlparse(base_model_url)
+        qs = urllib.parse.parse_qs(parsed.query)
+        qs["model"] = [model]
+        new_query = urllib.parse.urlencode(qs, doseq=True)
+        model_url = urllib.parse.urlunparse(parsed._replace(query=new_query))
+    else:
+        model_url = base_model_url
+
+    model_slices: list[tuple[int, bytes]] = []
+    for offset, png_bytes in slices:
+        model_png_bytes = await _forward_to_model(
+            model_url=model_url,
+            image_bytes=png_bytes,
+            timeout_seconds=30,
+        )
+        model_slices.append((offset, model_png_bytes))
+
+    model_stitch = await run_in_threadpool(_stitch_slices, model_slices)
+    return Response(content=model_stitch, media_type="image/png")

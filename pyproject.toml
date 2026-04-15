@@ -36,4 +36,9 @@ all = ["webidentification[dev]"]
 
 [tool.black]
 line-length = 88
+target-version = ["py312"]
+
+[tool.isort]
+profile = "black"
+known_third_party = ["wandb"]
 
