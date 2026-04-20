@@ -3,6 +3,13 @@ kind: Namespace
 metadata:
   name: webidentification
 ---
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: envoy
+spec:
+  controllerName: gateway.envoyproxy.io/gatewayclass-controller
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -116,49 +123,63 @@ metadata:
   name: frontend
   namespace: webidentification
 spec:
-  type: NodePort
+  type: ClusterIP
   selector:
     app: frontend
   ports:
-    - port: 8010
+    - name: http
+      port: 80
+      protocol: TCP
       targetPort: 8010
-      nodePort: 32010
 ---
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
 metadata:
   name: webidentification
   namespace: webidentification
 spec:
-  ingressClassName: nginx
-  rules:
-    - http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: frontend
-                port:
-                  number: 8010
+  gatewayClassName: envoy
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
 ---
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
 metadata:
-  name: webidentification-api
+  name: frontend
   namespace: webidentification
-  annotations:
-    nginx.ingress.kubernetes.io/use-regex: "true"
-    nginx.ingress.kubernetes.io/rewrite-target: /$2
 spec:
-  ingressClassName: nginx
+  parentRefs:
+    - name: webidentification
   rules:
-    - http:
-        paths:
-          - path: /api(/|$)(.*)
-            pathType: ImplementationSpecific
-            backend:
-              service:
-                name: model-backend
-                port:
-                  number: 8000
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: frontend
+          port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: model-backend
+  namespace: webidentification
+spec:
+  parentRefs:
+    - name: webidentification
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /api
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: /
+      backendRefs:
+        - name: model-backend
+          port: 8000
