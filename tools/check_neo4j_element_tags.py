@@ -1,4 +1,5 @@
 import csv
+
 from neo4j import GraphDatabase
 
 URI = "bolt://localhost:7687"

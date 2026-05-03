@@ -15,8 +15,7 @@ with GraphDatabase.driver(URI, auth=AUTH) as driver:
         print(f"{'Operation':<20} {'Count':>10}")
         total = 0
         for record in records:
-            count = record['count']
+            count = record["count"]
             total += count
             print(f"{record['op']:<20} {count:>10}")
         print(f"{'Total':<20} {total:>10}")
-        

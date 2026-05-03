@@ -1,7 +1,8 @@
 import hashlib
 from math import ceil
-from tqdm import tqdm
+
 from neo4j import GraphDatabase
+from tqdm import tqdm
 
 URI = "bolt://localhost:7687"
 AUTH = ("neo4j", "password")
@@ -24,7 +25,12 @@ with GraphDatabase.driver(URI, auth=AUTH) as driver:
 
         batch_size = 100
         batch_iterator = iter(lambda: result.fetch(batch_size), [])
-        for rows in tqdm(batch_iterator, total=ceil(count_actions/batch_size), unit="row", desc=f"{batch_iterator}x rows checked and hashed"):
+        for rows in tqdm(
+            batch_iterator,
+            total=ceil(count_actions / batch_size),
+            unit="row",
+            desc=f"{batch_iterator}x rows checked and hashed",
+        ):
             for row in rows:
                 screenshot = row["screenshot"]
                 screenshot_hash = hashlib.md5(screenshot.encode()).hexdigest()

@@ -18,7 +18,7 @@ from tqdm import tqdm
 URI = os.getenv("URI", "bolt://localhost:7687")
 AUTH = (os.getenv("USERNAME", "neo4j"), os.getenv("PASSWORD", "password"))
 
-DOMAIN_FILTER = "" # travel, shopping, info, entertainment, service
+DOMAIN_FILTER = ""  # travel, shopping, info, entertainment, service
 SPLITS = ["train", "test_domain", "test_task", "test_website"]
 
 ROOT_DIR = pathlib.Path("./CV_WebIdentification")
@@ -42,6 +42,7 @@ def match_element_filter(tag: str) -> str | None:
         if pattern.match(tag):
             return class_name
     return None
+
 
 RUNNING = True
 
@@ -261,16 +262,20 @@ def main():
 
         with driver.session() as session:
             if DOMAIN_FILTER != "":
-                result_ids = list(session.run(
-                    """
+                result_ids = list(
+                    session.run(
+                        """
                     MATCH (t:Task)-[:HAS_ACTION]->(a:Action)
                     WHERE toLower(t.domain) = $domain_filter
                     RETURN DISTINCT a.id AS action_uid
                     """,
-                    domain_filter=DOMAIN_FILTER,
-                ))
+                        domain_filter=DOMAIN_FILTER,
+                    )
+                )
             else:
-                result_ids = list(session.run("""MATCH (a:Action) RETURN a.id AS action_uid """))
+                result_ids = list(
+                    session.run("""MATCH (a:Action) RETURN a.id AS action_uid """)
+                )
             if len(result_ids) == 0:
                 print("No actions found for the specified domain filter.")
                 return
