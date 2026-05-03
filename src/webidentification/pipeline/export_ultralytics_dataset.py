@@ -18,6 +18,7 @@ from tqdm import tqdm
 URI = os.getenv("URI", "bolt://localhost:7687")
 AUTH = (os.getenv("USERNAME", "neo4j"), os.getenv("PASSWORD", "password"))
 
+DOMAIN_FILTER = "" # travel, shopping, info, entertainment, service
 SPLITS = ["train", "test_domain", "test_task", "test_website"]
 
 ROOT_DIR = pathlib.Path("./CV_WebIdentification")
@@ -31,7 +32,7 @@ MAX_HEIGHT = 1080
 MAX_WORKERS = 8
 
 ELEMENT_FILTER = [
-    (re.compile(r"*button*"), "button"),
+    (re.compile(r".*button.*"), "button"),
     (re.compile(r"^a$"), "button"),
 ]
 
@@ -259,7 +260,20 @@ def main():
             class_names = unique_class_names
 
         with driver.session() as session:
-            result_ids = session.run("MATCH (a:Action) RETURN a.id AS action_uid")
+            if DOMAIN_FILTER != "":
+                result_ids = list(session.run(
+                    """
+                    MATCH (t:Task)-[:HAS_ACTION]->(a:Action)
+                    WHERE toLower(t.domain) = $domain_filter
+                    RETURN DISTINCT a.id AS action_uid
+                    """,
+                    domain_filter=DOMAIN_FILTER,
+                ))
+            else:
+                result_ids = list(session.run("""MATCH (a:Action) RETURN a.id AS action_uid """))
+            if len(result_ids) == 0:
+                print("No actions found for the specified domain filter.")
+                return
             for record in tqdm(result_ids, desc="Processing actions", unit=" db-image"):
                 if not RUNNING:
                     print("Stopping early due to interrupt.")
