@@ -3,6 +3,7 @@ import io
 import json
 import os
 import pathlib
+import re
 import shutil
 import signal
 import sys
@@ -17,6 +18,7 @@ from tqdm import tqdm
 URI = os.getenv("URI", "bolt://localhost:7687")
 AUTH = (os.getenv("USERNAME", "neo4j"), os.getenv("PASSWORD", "password"))
 
+DOMAIN_FILTER = ""  # travel, shopping, info, entertainment, service
 SPLITS = ["train", "test_domain", "test_task", "test_website"]
 
 ROOT_DIR = pathlib.Path("./CV_WebIdentification")
@@ -29,10 +31,18 @@ MAX_HEIGHT = 1080
 
 MAX_WORKERS = 8
 
-ELEMENT_FILTER = {
-    "button": "button",
-    "a": "button",
-}
+ELEMENT_FILTER = [
+    (re.compile(r".*button.*"), "button"),
+    (re.compile(r"^a$"), "button"),
+]
+
+
+def match_element_filter(tag: str) -> str | None:
+    for pattern, class_name in ELEMENT_FILTER:
+        if pattern.match(tag):
+            return class_name
+    return None
+
 
 RUNNING = True
 
@@ -99,7 +109,8 @@ def save_bbox(
     new_width, new_height = get_resized_width_and_height(img_width, img_height)
     bbox_bins = [[] for _ in range(0, ceil(new_height / MAX_HEIGHT))]
     for elem in elements:
-        if elem["tag"] not in ELEMENT_FILTER:
+        element_tag = elem["tag"].lower()
+        if match_element_filter(element_tag) is None:
             continue
         attrs = json.loads(elem["attributes"])
         bbox_str = attrs.get("bounding_box_rect")
@@ -117,7 +128,7 @@ def save_bbox(
         bin_number = determine_y_bin_from_center(y_center)
         if is_bin_number_out_of_bounds(bbox_bins, bin_number):
             continue
-        class_id = get_class_id_from_element(class_names, elem["tag"])
+        class_id = get_class_id_from_element(class_names, element_tag)
 
         slice_x_center, slice_y_center, slice_width_norm, slice_height_norm = (
             normalize_bounding_box(x_center, y_center, width, height, bin_number)
@@ -158,7 +169,7 @@ def determine_y_bin_from_center(y_center: float) -> int:
 
 
 def get_class_id_from_element(class_names: list[str], elem_tag: str) -> int:
-    class_name = ELEMENT_FILTER[elem_tag]
+    class_name = match_element_filter(elem_tag)
     class_id = class_names.index(class_name)
     return class_id
 
@@ -245,12 +256,29 @@ def main():
 
     try:
         with driver.session() as session:
-            unique_class_names = sorted(set(ELEMENT_FILTER.values()))
+            unique_class_names = sorted(set(cn for _, cn in ELEMENT_FILTER))
             data["names"] = {i: name for i, name in enumerate(unique_class_names)}
             class_names = unique_class_names
 
         with driver.session() as session:
-            result_ids = session.run("MATCH (a:Action) RETURN a.id AS action_uid")
+            if DOMAIN_FILTER != "":
+                result_ids = list(
+                    session.run(
+                        """
+                    MATCH (t:Task)-[:HAS_ACTION]->(a:Action)
+                    WHERE toLower(t.domain) = $domain_filter
+                    RETURN DISTINCT a.id AS action_uid
+                    """,
+                        domain_filter=DOMAIN_FILTER,
+                    )
+                )
+            else:
+                result_ids = list(
+                    session.run("""MATCH (a:Action) RETURN a.id AS action_uid """)
+                )
+            if len(result_ids) == 0:
+                print("No actions found for the specified domain filter.")
+                return
             for record in tqdm(result_ids, desc="Processing actions", unit=" db-image"):
                 if not RUNNING:
                     print("Stopping early due to interrupt.")
