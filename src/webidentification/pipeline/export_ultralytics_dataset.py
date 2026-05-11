@@ -1,3 +1,4 @@
+import argparse
 import base64
 import io
 import json
@@ -7,7 +8,6 @@ import re
 import shutil
 import signal
 import sys
-import argparse
 from concurrent.futures import ThreadPoolExecutor
 from math import ceil, floor
 
@@ -243,12 +243,17 @@ def get_current_dir(split: str) -> pathlib.Path:
 
 
 def get_actions_ids(session, domain: str | None, website: str | None) -> list[str]:
-    if domain:
+    if domain and website:
+        query = """MATCH (t:Task)-[:HAS_ACTION]->(a:Action)
+                    WHERE t.domain = $domain AND t.website = $website
+                    RETURN a.id AS action_uid"""
+        result = session.run(query, domain=domain, website=website)
+    elif domain:
         query = """MATCH (t:Task)-[:HAS_ACTION]->(a:Action)
                     WHERE t.domain = $domain
                     RETURN a.id AS action_uid"""
         result = session.run(query, domain=domain)
-    if website:
+    elif website:
         query = """MATCH (t:Task)-[:HAS_ACTION]->(a:Action)
                     WHERE t.website = $website 
                     RETURN a.id AS action_uid"""
@@ -258,14 +263,23 @@ def get_actions_ids(session, domain: str | None, website: str | None) -> list[st
         result = session.run(query)
     return [record["action_uid"] for record in result]
 
+
 def main():
-    parser = argparse.ArgumentParser(description="Export Ultralytics dataset from Neo4j.")
-    parser.add_argument("--website", type=str, default=None, help="Filter by website name")
-    parser.add_argument("--domain", type=str, default=None, help="Filter by domain name")
+    parser = argparse.ArgumentParser(
+        description="Export Ultralytics dataset from Neo4j."
+    )
+    parser.add_argument(
+        "--website", type=str, default=None, help="Filter by website name"
+    )
+    parser.add_argument(
+        "--domain", type=str, default=None, help="Filter by domain name"
+    )
     parser.add_argument("--zip", action="store_true", help="Zip the output directory")
-    parser.add_argument("--clean", action="store_true", help="Remove the output directory after export")
+    parser.add_argument(
+        "--clean", action="store_true", help="Remove the output directory after export"
+    )
     args = parser.parse_args()
-    
+
     driver = GraphDatabase.driver(URI, auth=AUTH)
     use_one_folder = args.domain or args.website
     if use_one_folder:
