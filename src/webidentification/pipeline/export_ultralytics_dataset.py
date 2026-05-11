@@ -333,7 +333,13 @@ def main():
                     class_names,
                 )
 
-        with open(f"{data['path']}/ultralytics.yaml", "w") as f:
+        dataset_yaml_path = pathlib.Path(data["path"]) / "ultralytics.yaml"
+        legacy_dataset_yaml_path = pathlib.Path("cv_webidentification.yaml")
+
+        with open(dataset_yaml_path, "w") as f:
+            yaml.dump(data, f, default_flow_style=False)
+
+        with open(legacy_dataset_yaml_path, "w") as f:
             yaml.dump(data, f, default_flow_style=False)
     finally:
         driver.close()
