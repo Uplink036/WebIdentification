@@ -1,3 +1,4 @@
+import argparse
 import base64
 import io
 import json
@@ -241,14 +242,60 @@ def get_current_dir(split: str) -> pathlib.Path:
         raise ValueError(f"Unknown split: {split}")
 
 
+def get_actions_ids(session, domain: str | None, website: str | None) -> list[str]:
+    if domain and website:
+        query = """MATCH (t:Task)-[:HAS_ACTION]->(a:Action)
+                    WHERE t.domain = $domain AND t.website = $website
+                    RETURN a.id AS action_uid"""
+        result = session.run(query, domain=domain, website=website)
+    elif domain:
+        query = """MATCH (t:Task)-[:HAS_ACTION]->(a:Action)
+                    WHERE t.domain = $domain
+                    RETURN a.id AS action_uid"""
+        result = session.run(query, domain=domain)
+    elif website:
+        query = """MATCH (t:Task)-[:HAS_ACTION]->(a:Action)
+                    WHERE t.website = $website 
+                    RETURN a.id AS action_uid"""
+        result = session.run(query, website=website)
+    else:
+        query = "MATCH (a:Action) RETURN a.id AS action_uid"
+        result = session.run(query)
+    return [record["action_uid"] for record in result]
+
+
 def main():
+    parser = argparse.ArgumentParser(
+        description="Export Ultralytics dataset from Neo4j."
+    )
+    parser.add_argument(
+        "--website", type=str, default=None, help="Filter by website name"
+    )
+    parser.add_argument(
+        "--domain", type=str, default=None, help="Filter by domain name"
+    )
+    parser.add_argument("--zip", action="store_true", help="Zip the output directory")
+    parser.add_argument(
+        "--clean", action="store_true", help="Remove the output directory after export"
+    )
+    args = parser.parse_args()
+
     driver = GraphDatabase.driver(URI, auth=AUTH)
-    data = {
-        "path": "CV_WebIdentification",
-        "train": "train",
-        "test": "test",
-        "val": "val",
-    }
+    use_one_folder = args.domain or args.website
+    if use_one_folder:
+        data = {
+            "path": "CV_WebIdentification_SOLO",
+            "train": "train",
+            "test": "train",
+            "val": "train",
+        }
+    else:
+        data = {
+            "path": "CV_WebIdentification",
+            "train": "train",
+            "test": "test",
+            "val": "val",
+        }
 
     TRAIN_DIR.mkdir(parents=True, exist_ok=True)
     TEST_DIR.mkdir(parents=True, exist_ok=True)
@@ -261,29 +308,17 @@ def main():
             class_names = unique_class_names
 
         with driver.session() as session:
-            if DOMAIN_FILTER != "":
-                result_ids = list(
-                    session.run(
-                        """
-                    MATCH (t:Task)-[:HAS_ACTION]->(a:Action)
-                    WHERE toLower(t.domain) = $domain_filter
-                    RETURN DISTINCT a.id AS action_uid
-                    """,
-                        domain_filter=DOMAIN_FILTER,
-                    )
-                )
-            else:
-                result_ids = list(
-                    session.run("""MATCH (a:Action) RETURN a.id AS action_uid """)
-                )
-            if len(result_ids) == 0:
-                print("No actions found for the specified domain filter.")
-                return
-            for record in tqdm(result_ids, desc="Processing actions", unit=" db-image"):
+            result_ids = get_actions_ids(session, args.domain, args.website)
+            len_result_ids = len(result_ids)
+            for action_uid in tqdm(
+                result_ids,
+                desc="Processing actions",
+                unit=" db-image",
+                total=len_result_ids,
+            ):
                 if not RUNNING:
                     print("Stopping early due to interrupt.")
                     break
-                action_uid = record["action_uid"]
                 result_action = session.run(
                     """
                     MATCH (a:Action {id: $action_uid})
@@ -312,15 +347,21 @@ def main():
                     class_names,
                 )
 
-        with open("cv_webidentification.yaml", "w") as f:
+        dataset_yaml_path = pathlib.Path(data["path"]) / "ultralytics.yaml"
+        legacy_dataset_yaml_path = pathlib.Path("cv_webidentification.yaml")
+
+        with open(dataset_yaml_path, "w") as f:
+            yaml.dump(data, f, default_flow_style=False)
+
+        with open(legacy_dataset_yaml_path, "w") as f:
             yaml.dump(data, f, default_flow_style=False)
     finally:
         driver.close()
 
-    if "--zip" in sys.argv:
-        shutil.make_archive("CV_WebIdentification", "zip", ROOT_DIR)
+    if args.zip:
+        shutil.make_archive(f"{data['path']}", "zip", ROOT_DIR)
 
-    if "--clean" in sys.argv:
+    if args.clean:
         shutil.rmtree(ROOT_DIR)
 
 
