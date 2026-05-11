@@ -120,7 +120,7 @@ def main() -> None:
                     "path": split_dir.as_posix(),
                     "train": "train",
                     "val": "val",
-                    "names": classes,
+                    "names": config["names"],
                 },
                 ds_y,
             )
