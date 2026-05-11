@@ -8,6 +8,7 @@ import re
 import shutil
 import signal
 import sys
+from random import choices
 from concurrent.futures import ThreadPoolExecutor
 from math import ceil, floor
 
@@ -229,6 +230,13 @@ def resize_with_aspect_ratio(image: Image.Image) -> Image.Image:
     return image.resize((new_width, new_height), Image.LANCZOS)
 
 
+def get_random_dir() -> pathlib.Path:
+    return choices(
+        population=[VAL_DIR, TEST_DIR, TRAIN_DIR],
+        weights=[0.15, 0.05, 0.8],
+        k=1
+    )[0]
+
 def get_current_dir(split: str) -> pathlib.Path:
     if split == "test_website":
         return VAL_DIR
@@ -281,8 +289,8 @@ def main():
     args = parser.parse_args()
 
     driver = GraphDatabase.driver(URI, auth=AUTH)
-    use_one_folder = args.domain or args.website
-    if use_one_folder:
+    use_part_of_dataset = args.domain or args.website
+    if use_part_of_dataset is True:
         data = {
             "path": "CV_WebIdentification_SOLO",
             "train": "train",
@@ -330,8 +338,12 @@ def main():
                     action_uid=action_uid,
                 )
                 record = result_action.single()
+
                 split = record["split"]
-                current_dir = get_current_dir(split)
+                if use_part_of_dataset:
+                    current_dir = get_random_dir()
+                else:
+                    current_dir = get_current_dir(split)
                 if current_dir is None:
                     continue
 
