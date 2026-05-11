@@ -16,7 +16,6 @@ import wandb
 
 MODEL_WEIGHTS = {"yolo": "yolo26n.pt", "rtdetr": "rtdetr-l.pt"}
 CONFIG_PATH = Path("CV_WebIdentification") / "ultralytics.yaml"
-PERCENTAGE_TRAIN_SPLITS = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 MAX_WORKERS = 4
 AUTO_BATCH_SIZE = True
 BATCH_UTILIZATION_TARGET = -1 if AUTO_BATCH_SIZE else 0.8
@@ -29,6 +28,11 @@ def parse_args() -> argparse.Namespace:
         choices=("yolo", "rtdetr"),
         default="yolo",
         help="Choose yolo or rtdetr",
+    )
+    parser.add_argument(
+        "--name",
+        default="",
+        help="Choose a name to give the run, note [MODEL]_[NAME]_[K_FOLD]",
     )
     return parser.parse_args()
 
@@ -69,7 +73,6 @@ def main() -> None:
     index = [label.stem for label in labels]
     labels_df = pd.DataFrame([], columns=classes, index=index)
 
-
     from collections import Counter
 
     for label in labels:
@@ -79,16 +82,13 @@ def main() -> None:
             lines = lf.readlines()
 
         for line in lines:
-            # classes for YOLO label uses integer at first position of each line
             lbl_counter[int(line.split(" ", 1)[0])] += 1
 
         labels_df.loc[label.stem] = lbl_counter
-    labels_df = labels_df.fillna(0.0)  # replace `nan` values with `0.0`
-
-    print(labels_df.head())
+    labels_df = labels_df.fillna(0.0)
 
     ksplit = 5
-    kf = KFold(n_splits=ksplit, shuffle=True, random_state=20)  # setting random_state for repeatable results
+    kf = KFold(n_splits=ksplit, shuffle=True, random_state=20)
     kfolds = list(kf.split(labels_df))
 
     folds = [f"split_{n}" for n in range(1, ksplit + 1)]
@@ -130,11 +130,9 @@ def main() -> None:
             if k_split not in ("train", "val"):
                 print(f"Skipping {image.stem} for {split} as it is marked {k_split}")
                 continue
-            # Destination directory
             img_to_path = save_path / split / k_split / "images"
             lbl_to_path = save_path / split / k_split / "labels"
 
-            # Copy image and label files to new directory (SamefileError if file already exists)
             shutil.copy(image, img_to_path / image.name)
             shutil.copy(label, lbl_to_path / label.name)
 
@@ -147,11 +145,15 @@ def main() -> None:
     batch_size = BATCH_UTILIZATION_TARGET
     for k, dataset_yaml in enumerate(ds_yamls):
         model = RTDETR(model_weights) if model_key == "rtdetr" else YOLO(model_weights)
+        if len(args.name) > 0:
+            run_name = f"{model_key}_{args.name}_{k}",
+        else:
+            run_name = f"{model_key}_{k}",
         model.train(
             data=dataset_yaml,
             epochs=100,
             project="WebIdentification_k_fold",
-            name=f"{model_key}_split_{k}-0",
+            name=run_name,
             batch=batch_size,
             imgsz=640,
             workers=train_workers,
